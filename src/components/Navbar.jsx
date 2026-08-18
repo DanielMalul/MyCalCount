@@ -1,12 +1,13 @@
 import React from 'react';
-import { Flame, Calendar, Settings, User, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Flame, Calendar, User, Sparkles, ChevronLeft, ChevronRight, LogOut, LogIn } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal }) {
+export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAuthModal }) {
   const selectedDate = useFitnessStore((state) => state.selectedDate);
   const setSelectedDate = useFitnessStore((state) => state.setSelectedDate);
   const geminiApiKey = useFitnessStore((state) => state.geminiApiKey);
-  const userProfile = useFitnessStore((state) => state.userProfile);
+  const user = useFitnessStore((state) => state.user);
+  const logout = useFitnessStore((state) => state.logout);
 
   const handlePrevDay = () => {
     const d = new Date(selectedDate);
@@ -76,7 +77,7 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal }) {
           </button>
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls & Auth User Badge */}
         <div className="flex items-center space-x-2">
           {/* Gemini API Key Status */}
           <button
@@ -94,14 +95,36 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal }) {
             </span>
           </button>
 
-          {/* User Profile Button */}
-          <button
-            onClick={onOpenProfileModal}
-            className="p-2.5 rounded-xl glass-input hover:border-cyan-400 text-slate-300 transition-all"
-            title="User Profile Settings"
-          >
-            <User className="w-4 h-4" />
-          </button>
+          {/* User Auth Badge / Login Button */}
+          {user ? (
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={onOpenProfileModal}
+                className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 hover:border-cyan-400/50 text-xs font-bold text-slate-200 transition-all"
+              >
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-600 flex items-center justify-center text-[10px] font-black text-white">
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <span className="hidden md:inline max-w-[90px] truncate">{user.displayName || user.email}</span>
+              </button>
+
+              <button
+                onClick={logout}
+                className="p-2 rounded-xl text-slate-400 hover:text-pink-400 hover:bg-pink-500/10 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuthModal}
+              className="px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold text-xs shadow-md hover:scale-105 transition-transform flex items-center gap-1.5"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Login</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

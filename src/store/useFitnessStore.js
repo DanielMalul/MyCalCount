@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { calculateTargets } from '../utils/fitnessMath';
+import {
+  auth,
+  isFirebaseConfigured,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  signInWithPopup,
+  googleProvider,
+  db,
+  doc,
+  setDoc
+} from '../config/firebase';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
@@ -17,6 +30,10 @@ const defaultProfile = {
 export const useFitnessStore = create(
   persist(
     (set, get) => ({
+      // User Auth State
+      user: null, // { uid, email, displayName, photoURL }
+      isAuthLoading: false,
+
       // User Profile & Onboarding State
       onboardingCompleted: false,
       userProfile: defaultProfile,
@@ -32,7 +49,92 @@ export const useFitnessStore = create(
       steps: 4120,
       stepTarget: 10000,
 
-      // Actions
+      // Auth Actions
+      setUser: (user) => set({ user }),
+
+      registerWithEmail: async (name, email, password) => {
+        set({ isAuthLoading: true });
+        if (!isFirebaseConfigured || !auth) {
+          // Local fallback registration
+          const mockUser = { uid: 'user_' + Date.now(), email, displayName: name };
+          set({ user: mockUser, isAuthLoading: false });
+          return mockUser;
+        }
+
+        try {
+          const res = await createUserWithEmailAndPassword(auth, email, password);
+          if (name && res.user) {
+            await updateProfile(res.user, { displayName: name });
+          }
+          const userData = {
+            uid: res.user.uid,
+            email: res.user.email,
+            displayName: name || res.user.email.split('@')[0]
+          };
+          set({ user: userData, isAuthLoading: false });
+          return userData;
+        } catch (err) {
+          set({ isAuthLoading: false });
+          throw err;
+        }
+      },
+
+      loginWithEmail: async (email, password) => {
+        set({ isAuthLoading: true });
+        if (!isFirebaseConfigured || !auth) {
+          // Local fallback login
+          const mockUser = { uid: 'user_local', email, displayName: email.split('@')[0] };
+          set({ user: mockUser, isAuthLoading: false });
+          return mockUser;
+        }
+
+        try {
+          const res = await signInWithEmailAndPassword(auth, email, password);
+          const userData = {
+            uid: res.user.uid,
+            email: res.user.email,
+            displayName: res.user.displayName || res.user.email.split('@')[0]
+          };
+          set({ user: userData, isAuthLoading: false });
+          return userData;
+        } catch (err) {
+          set({ isAuthLoading: false });
+          throw err;
+        }
+      },
+
+      loginWithGoogle: async () => {
+        set({ isAuthLoading: true });
+        if (!isFirebaseConfigured || !auth || !googleProvider) {
+          const mockUser = { uid: 'user_google', email: 'user@gmail.com', displayName: 'Google User' };
+          set({ user: mockUser, isAuthLoading: false });
+          return mockUser;
+        }
+
+        try {
+          const res = await signInWithPopup(auth, googleProvider);
+          const userData = {
+            uid: res.user.uid,
+            email: res.user.email,
+            displayName: res.user.displayName,
+            photoURL: res.user.photoURL
+          };
+          set({ user: userData, isAuthLoading: false });
+          return userData;
+        } catch (err) {
+          set({ isAuthLoading: false });
+          throw err;
+        }
+      },
+
+      logout: async () => {
+        if (isFirebaseConfigured && auth) {
+          await signOut(auth);
+        }
+        set({ user: null });
+      },
+
+      // Profile Actions
       setGeminiApiKey: (key) => set({ geminiApiKey: key }),
 
       updateProfile: (profileUpdates) => {
@@ -42,6 +144,16 @@ export const useFitnessStore = create(
           userProfile: updatedProfile,
           dailyTargets: newTargets
         });
+
+        // Sync to Firestore if user logged in
+        const user = get().user;
+        if (isFirebaseConfigured && db && user?.uid) {
+          try {
+            setDoc(doc(db, 'users', user.uid), { profile: updatedProfile }, { merge: true });
+          } catch (e) {
+            console.error('Firestore sync error:', e);
+          }
+        }
       },
 
       completeOnboarding: (profileData) => {
@@ -71,7 +183,18 @@ export const useFitnessStore = create(
           explanation: meal.explanation || 'Analyzed via Gemini Vision AI',
           image: meal.image || null
         };
-        set({ loggedMeals: [newMeal, ...get().loggedMeals] });
+        const updatedMeals = [newMeal, ...get().loggedMeals];
+        set({ loggedMeals: updatedMeals });
+
+        // Sync to Firestore if user logged in
+        const user = get().user;
+        if (isFirebaseConfigured && db && user?.uid) {
+          try {
+            setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: updatedMeals }, { merge: true });
+          } catch (e) {
+            console.error('Firestore meal sync error:', e);
+          }
+        }
       },
 
       deleteMeal: (id) => {

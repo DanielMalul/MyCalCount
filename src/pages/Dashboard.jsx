@@ -7,13 +7,11 @@ import {
   Dumbbell,
   Wheat,
   PieChart,
-  Calendar,
   Sparkles,
-  Info,
-  ChevronRight,
   TrendingDown,
   TrendingUp,
-  Target
+  Target,
+  LogIn
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import Navbar from '../components/Navbar';
@@ -25,6 +23,7 @@ import MealScannerModal from '../components/MealScannerModal';
 import MealLogItem from '../components/MealLogItem';
 import OnboardingModal from '../components/OnboardingModal';
 import ApiKeyModal from '../components/ApiKeyModal';
+import AuthModal from '../components/AuthModal';
 
 export default function Dashboard() {
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -32,12 +31,14 @@ export default function Dashboard() {
   const onboardingCompleted = useFitnessStore((state) => state.onboardingCompleted);
   const selectedDate = useFitnessStore((state) => state.selectedDate);
   const loggedMeals = useFitnessStore((state) => state.loggedMeals);
+  const user = useFitnessStore((state) => state.user);
   const getDailyTotals = useFitnessStore((state) => state.getDailyTotals);
 
   // Modal open states
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Auto trigger onboarding if not completed yet
   useEffect(() => {
@@ -71,6 +72,7 @@ export default function Dashboard() {
       <Navbar
         onOpenApiKeyModal={() => setIsApiKeyOpen(true)}
         onOpenProfileModal={() => setIsOnboardingOpen(true)}
+        onOpenAuthModal={() => setIsAuthOpen(true)}
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
@@ -87,6 +89,11 @@ export default function Dashboard() {
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
                   {currentGoalObj.label}
                 </span>
+                {user && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                    Cloud Synced
+                  </span>
+                )}
               </div>
               <p className="text-base font-extrabold text-white mt-0.5">
                 {userProfile.currentWeightKg} kg <span className="text-slate-400 text-xs font-normal">current</span> →{' '}
@@ -243,6 +250,7 @@ export default function Dashboard() {
       <MealScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
       <OnboardingModal isOpen={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
       <ApiKeyModal isOpen={isApiKeyOpen} onClose={() => setIsApiKeyOpen(false)} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 }
