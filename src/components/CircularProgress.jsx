@@ -14,85 +14,80 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
   const isOverTarget = remaining < 0;
 
   return (
-    <div className="relative flex flex-col items-center justify-center p-6 glass-panel rounded-3xl border border-slate-800/80 shadow-2xl">
-      {/* Glow Backdrop */}
-      <div className="absolute w-44 h-44 rounded-full bg-cyan-500/10 blur-3xl -z-10 pointer-events-none" />
+    <div className="relative flex flex-col items-center justify-center p-6 glass-panel rounded-3xl border border-slate-800/60 shadow-xl">
+      {/* Background Soft Glow */}
+      <div className="absolute w-40 h-40 rounded-full bg-emerald-500/5 blur-3xl -z-10 pointer-events-none" />
 
-      {/* Circular SVG Ring */}
+      {/* Circular Progress Ring */}
       <div className="relative w-52 h-52 flex items-center justify-center">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
           <defs>
-            <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00F5D4" />
-              <stop offset="50%" stopColor="#7000FF" />
-              <stop offset="100%" stopColor="#FF007A" />
+            <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#10B981" />
+              <stop offset="100%" stopColor="#14B8A6" />
             </linearGradient>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#00F5D4" floodOpacity="0.5" />
-            </filter>
           </defs>
 
-          {/* Background Track */}
+          {/* Track */}
           <circle
             cx="100"
             cy="100"
             r={radius}
-            stroke="rgba(30, 41, 59, 0.6)"
+            stroke="rgba(30, 41, 59, 0.5)"
             strokeWidth={strokeWidth}
             fill="transparent"
           />
 
-          {/* Animated Glowing Ring */}
+          {/* Smooth Filled Ring */}
           <motion.circle
             cx="100"
             cy="100"
             r={radius}
-            stroke="url(#cyanGradient)"
+            stroke="url(#emeraldGradient)"
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeLinecap="round"
             fill="transparent"
-            filter="url(#glow)"
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset }}
-            transition={{ duration: 1, ease: 'easeOut' }}
+            transition={{ duration: 0.9, ease: 'easeInOut' }}
           />
         </svg>
 
-        {/* Center Calorie Display */}
+        {/* Center Calorie Counter */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <div className="flex items-center space-x-1 space-x-reverse text-cyan-400 mb-0.5">
-            <Flame className="w-4 h-4 animate-bounce" />
-            <span className="text-[11px] font-bold tracking-wider">קלוריות שנצרכו</span>
+          <div className="flex items-center space-x-1 space-x-reverse text-emerald-400 mb-0.5 font-medium">
+            <Flame className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-semibold">קלוריות שנצרכו</span>
           </div>
 
           <motion.span
             key={consumed}
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white"
+            className="text-3xl sm:text-4xl font-black tracking-tight text-white"
           >
             {consumed.toLocaleString()}
           </motion.span>
 
           <div className="text-xs text-slate-400 font-medium mt-0.5">
-            מתוך <span className="text-slate-200 font-bold">{target.toLocaleString()}</span> קלוריות
+            מתוך <span className="text-slate-200 font-bold">{target.toLocaleString()}</span> קל'
           </div>
         </div>
       </div>
 
-      {/* Target Status Banner */}
+      {/* Target Status Bar */}
       <div className="mt-4 w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800">
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-purple-400" />
-          <span className="text-xs text-slate-400 font-medium">יעד יומי:</span>
+          <Zap className="w-4 h-4 text-emerald-400" />
+          <span className="text-xs text-slate-400 font-medium">סטטוס יעד:</span>
         </div>
         <span
           className={`text-xs font-bold ${
-            isOverTarget ? 'text-pink-400 neon-text-pink' : 'text-cyan-400 neon-text-cyan'
+            isOverTarget ? 'text-rose-400' : 'text-emerald-400'
           }`}
         >
-          {isOverTarget ? `חריגה של ${Math.abs(remaining)} קלוריות` : `נשארו עוד ${remaining} קלוריות`}
+          {isOverTarget ? `חריגה של ${Math.abs(remaining)} קלוריות` : `נשארו עוד ${remaining} קלוריות ליעד`}
         </span>
       </div>
     </div>

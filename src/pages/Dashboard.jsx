@@ -20,7 +20,7 @@ import StepTrackerWidget from '../components/StepTrackerWidget';
 import WaterTrackerWidget from '../components/WaterTrackerWidget';
 import MealScannerModal from '../components/MealScannerModal';
 import MealLogItem from '../components/MealLogItem';
-import OnboardingModal, { HEBREW_GOALS } from '../components/OnboardingModal';
+import OnboardingModal from '../components/OnboardingModal';
 import ApiKeyModal from '../components/ApiKeyModal';
 import AuthModal from '../components/AuthModal';
 
@@ -52,20 +52,19 @@ export default function Dashboard() {
   const filteredMeals = loggedMeals.filter((m) => m.date === selectedDate);
 
   const goalLabels = {
-    cut: { label: 'חיטוב (ירידה בשומן)', icon: TrendingDown, color: 'text-pink-400' },
-    bulk: { label: 'מסה (עלייה בשריר)', icon: TrendingUp, color: 'text-cyan-400' },
-    recomp: { label: 'ריקומפ / שמירה', icon: Target, color: 'text-purple-400' }
+    cut: { label: 'חיטוב (ירידה בשומן)', icon: TrendingDown, color: 'text-rose-400' },
+    bulk: { label: 'מסה (עלייה בשריר)', icon: TrendingUp, color: 'text-emerald-400' },
+    recomp: { label: 'שמירה על משקל', icon: Target, color: 'text-indigo-400' }
   };
 
   const currentGoalObj = goalLabels[userProfile.goal] || goalLabels.cut;
   const GoalIcon = currentGoalObj.icon;
 
   return (
-    <div className="min-h-screen pb-24 text-slate-100 selection:bg-cyan-500 selection:text-black">
-      {/* Background Ambient Glows */}
-      <div className="fixed top-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="fixed top-1/3 left-10 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="fixed bottom-10 right-1/3 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+    <div className="min-h-screen pb-24 text-slate-100 selection:bg-emerald-500 selection:text-black">
+      {/* Background Ambient Lights */}
+      <div className="fixed top-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="fixed top-1/3 left-10 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
 
       {/* Main Header / Navbar */}
       <Navbar
@@ -77,26 +76,26 @@ export default function Dashboard() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
         
         {/* User Target & Metric Banner */}
-        <section className="glass-panel p-5 rounded-3xl border border-slate-800/80 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <section className="glass-panel p-5 rounded-3xl border border-slate-800/60 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-4 space-x-reverse w-full md:w-auto">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 text-cyan-400 shrink-0">
+            <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-emerald-400 shrink-0">
               <GoalIcon className={`w-6 h-6 ${currentGoalObj.color}`} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">תוכנית פעילה</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">מטרת התזונה</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   {currentGoalObj.label}
                 </span>
                 {user && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                    מסונכרן בענן
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    גיבוי בענן
                   </span>
                 )}
               </div>
               <p className="text-base font-extrabold text-white mt-0.5">
                 {userProfile.currentWeightKg} ק"ג <span className="text-slate-400 text-xs font-normal">נוכחי</span> ←{' '}
-                <span className="text-cyan-300">{userProfile.targetWeightKg} ק"ג</span> <span className="text-slate-400 text-xs font-normal">משקל יעד</span>
+                <span className="text-emerald-400">{userProfile.targetWeightKg} ק"ג</span> <span className="text-slate-400 text-xs font-normal">משקל יעד</span>
               </p>
             </div>
           </div>
@@ -114,7 +113,7 @@ export default function Dashboard() {
             <div className="h-6 w-px bg-slate-800" />
             <div className="text-center md:text-right">
               <span className="text-slate-400 text-[10px] block">יעד קלוריות</span>
-              <span className="font-extrabold text-cyan-400">{dailyTargets.targetCalories} קל'</span>
+              <span className="font-extrabold text-emerald-400">{dailyTargets.targetCalories} קל'</span>
             </div>
           </div>
         </section>
@@ -155,21 +154,21 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* AI Scanner Quick Hero Banner */}
-        <section className="glass-panel p-6 rounded-3xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/30 via-slate-900/60 to-purple-950/30 shadow-2xl relative overflow-hidden">
+        {/* AI Scanner Hero Banner */}
+        <section className="glass-panel p-6 rounded-3xl border border-slate-800/80 bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/20 shadow-xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
             <div className="space-y-1 text-center sm:text-right">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 mb-1">
-                <Sparkles className="w-3.5 h-3.5" /> ניתוח תמונה מיידי ב-AI
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-1">
+                <Sparkles className="w-3.5 h-3.5" /> סורק ארוחות חכם
               </div>
-              <h2 className="text-xl font-extrabold text-white">סרוק ארוחות עם המצלמה ו-Gemini AI</h2>
+              <h2 className="text-xl font-bold text-white">הוסף ארוחה בצילום תמונה או הזנה ידנית</h2>
               <p className="text-xs text-slate-300 max-w-md">
-                צלם את הצלחת שלך לקבלת חישוב גרמים, קלוריות, חלבון, פחמימות ושומנים בשניות.
+                צלם את האוכל בצלחת או הכנס משקל בגרמים לקבלת חישוב קלוריות, חלבונים, פחמימות ושומנים בשניות.
               </p>
             </div>
             <button
               onClick={() => setIsScannerOpen(true)}
-              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-white font-extrabold text-sm shadow-xl shadow-cyan-500/30 hover:scale-105 transition-all flex items-center gap-2 shrink-0"
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-sm shadow-md hover:opacity-95 transition-all flex items-center gap-2 shrink-0"
             >
               <Camera className="w-5 h-5" /> סרוק ארוחה עכשיו
             </button>
@@ -183,14 +182,14 @@ export default function Dashboard() {
         </section>
 
         {/* Meals Logged Timeline Section */}
-        <section className="glass-panel p-6 rounded-3xl border border-slate-800/80 shadow-2xl space-y-4">
+        <section className="glass-panel p-6 rounded-3xl border border-slate-800/80 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+              <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400">
                 <Flame className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-100">ארוחות היום</h3>
+                <h3 className="text-base font-bold text-slate-100">יומן ארוחות להיום</h3>
                 <p className="text-xs text-slate-400">
                   {filteredMeals.length} ארוחות נרשמו להיום
                 </p>
@@ -199,7 +198,7 @@ export default function Dashboard() {
 
             <button
               onClick={() => setIsScannerOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 text-xs font-bold border border-slate-700/80 flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-emerald-400 text-xs font-bold border border-slate-700/80 flex items-center gap-1.5 transition-colors"
             >
               <Plus className="w-4 h-4" /> הוסף ארוחה
             </button>
@@ -220,7 +219,7 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold text-slate-400">טרם נרשמו ארוחות לתאריך זה</p>
                   <button
                     onClick={() => setIsScannerOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-bold hover:bg-cyan-500/20 transition-all inline-flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all inline-flex items-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5" /> סרוק ארוחה ראשונה
                   </button>
@@ -234,13 +233,13 @@ export default function Dashboard() {
 
       {/* Floating Mobile Camera Button */}
       <motion.button
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsScannerOpen(true)}
-        className="fixed bottom-6 left-6 z-40 p-4 rounded-full bg-gradient-to-tr from-cyan-400 via-purple-500 to-pink-500 text-white shadow-2xl shadow-cyan-500/40 border border-white/20 flex items-center justify-center"
-        title="צילום ארוחה ב-AI"
+        className="fixed bottom-6 left-6 z-40 p-4 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white shadow-xl border border-white/20 flex items-center justify-center"
+        title="הוסף ארוחה"
       >
-        <Camera className="w-7 h-7" />
+        <Camera className="w-6 h-6" />
       </motion.button>
 
       {/* Modals */}
