@@ -136,28 +136,6 @@ export default function MealScannerModal({ isOpen, onClose }) {
     });
   };
 
-  const handleSampleMeal = (sampleType) => {
-    const samples = {
-      chicken: {
-        url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',
-        name: 'קערת חזה עוף ואורז'
-      },
-      salmon: {
-        url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=600&q=80',
-        name: 'סלט סלמון ואבוקדו'
-      },
-      steak: {
-        url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
-        name: 'סטייק אנטריקוט עם תפוחי אדמה'
-      }
-    };
-
-    const choice = samples[sampleType] || samples.chicken;
-    setImagePreview(choice.url);
-    setAnalysisResult(null);
-    processImageWithGemini(choice.url);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
       <motion.div
@@ -168,7 +146,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2 space-x-reverse">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-400 to-purple-600 shadow-md">
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 shadow-md">
               {activeTab === 'ai' ? <Camera className="w-5 h-5 text-white" /> : <Edit3 className="w-5 h-5 text-white" />}
             </div>
             <div>
@@ -196,7 +174,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
             }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'ai'
-                ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -210,7 +188,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
             }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'manual'
-                ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -221,52 +199,23 @@ export default function MealScannerModal({ isOpen, onClose }) {
         {activeTab === 'ai' && (
           <div className="space-y-4">
             {!imagePreview && (
-              <div className="space-y-4">
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-700 hover:border-cyan-400 rounded-3xl p-8 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-cyan-500/5 group"
-                >
-                  <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-800/80 group-hover:bg-cyan-500/10 flex items-center justify-center text-slate-400 group-hover:text-cyan-400 transition-colors">
-                    <Upload className="w-8 h-8" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-200">לחץ להעלאת תמונה או צילום במצלמה</p>
-                  <p className="text-xs text-slate-400 mt-1">תומך ב-JPG, PNG, WEBP</p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-700 hover:border-emerald-400 rounded-3xl p-10 text-center cursor-pointer transition-all bg-slate-900/40 hover:bg-emerald-500/5 group"
+              >
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-800/80 group-hover:bg-emerald-500/10 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition-colors">
+                  <Upload className="w-8 h-8" />
                 </div>
-
-                <div className="pt-2">
-                  <p className="text-xs text-slate-400 font-semibold mb-2">או בחר ארוחת דוגמה לבדיקה:</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => handleSampleMeal('chicken')}
-                      className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-400/50 text-right transition-all"
-                    >
-                      <p className="text-xs font-bold text-slate-200 truncate">🍗 עוף ואורז</p>
-                      <p className="text-[10px] text-slate-400">עשיר בחלבון</p>
-                    </button>
-                    <button
-                      onClick={() => handleSampleMeal('salmon')}
-                      className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-400/50 text-right transition-all"
-                    >
-                      <p className="text-xs font-bold text-slate-200 truncate">🐟 סלט סלמון</p>
-                      <p className="text-[10px] text-slate-400">שומנים בריאים</p>
-                    </button>
-                    <button
-                      onClick={() => handleSampleMeal('steak')}
-                      className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-400/50 text-right transition-all"
-                    >
-                      <p className="text-xs font-bold text-slate-200 truncate">🥩 סטייק ותפוח אדמה</p>
-                      <p className="text-[10px] text-slate-400">ארוחת מסה</p>
-                    </button>
-                  </div>
-                </div>
+                <p className="text-sm font-bold text-slate-200">לחץ להעלאת תמונה או צילום ארוחה במצלמה</p>
+                <p className="text-xs text-slate-400 mt-1">תומך ב-JPG, PNG, WEBP</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
               </div>
             )}
 
@@ -285,16 +234,16 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
                 {isAnalyzing && (
                   <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-3">
-                    <div className="w-10 h-10 mx-auto rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
-                    <p className="text-sm font-bold text-cyan-300 flex items-center justify-center gap-1.5">
-                      <Sparkles className="w-4 h-4 animate-bounce" /> Gemini Vision AI מנתח את התמונה והגרמים...
+                    <div className="w-10 h-10 mx-auto rounded-full border-2 border-emerald-400 border-t-transparent animate-spin" />
+                    <p className="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
+                      <Sparkles className="w-4 h-4 animate-bounce" /> Gemini Vision AI מנתח את התמונה והערכים...
                     </p>
                     <p className="text-xs text-slate-400">מעריך משקל בגרמים, קלוריות, חלבון, פחמימות ושומנים</p>
                   </div>
                 )}
 
                 {errorMsg && (
-                  <div className="p-4 rounded-2xl bg-pink-500/10 border border-pink-500/30 text-pink-300 text-xs flex items-center gap-2">
+                  <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
@@ -305,13 +254,13 @@ export default function MealScannerModal({ isOpen, onClose }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5">
-                          {analysisResult.isMock ? 'סימולציית AI' : 'מאומת Gemini Vision'}
+                          מאומת Gemini Vision
                         </span>
                         <span className="text-xs text-slate-400 font-semibold">מנה של {analysisResult.weight_grams} גרם</span>
                       </div>
                       <button
                         onClick={() => setIsEditing(!isEditing)}
-                        className="text-xs text-cyan-400 flex items-center gap-1 hover:underline font-semibold"
+                        className="text-xs text-emerald-400 flex items-center gap-1 hover:underline font-semibold"
                       >
                         <Edit3 className="w-3 h-3" /> {isEditing ? 'סיום' : 'ערוך ערכים'}
                       </button>
@@ -338,10 +287,10 @@ export default function MealScannerModal({ isOpen, onClose }) {
                             onChange={(e) =>
                               setAnalysisResult({ ...analysisResult, total_calories: Number(e.target.value) })
                             }
-                            className="w-full text-center text-xs font-bold bg-transparent text-cyan-300"
+                            className="w-full text-center text-xs font-bold bg-transparent text-emerald-400"
                           />
                         ) : (
-                          <p className="text-sm font-black text-cyan-300">{analysisResult.total_calories} <span className="text-[10px]">קל'</span></p>
+                          <p className="text-sm font-black text-emerald-400">{analysisResult.total_calories} <span className="text-[10px]">קל'</span></p>
                         )}
                       </div>
                       <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
@@ -353,10 +302,10 @@ export default function MealScannerModal({ isOpen, onClose }) {
                             onChange={(e) =>
                               setAnalysisResult({ ...analysisResult, protein_g: Number(e.target.value) })
                             }
-                            className="w-full text-center text-xs font-bold bg-transparent text-purple-400"
+                            className="w-full text-center text-xs font-bold bg-transparent text-indigo-400"
                           />
                         ) : (
-                          <p className="text-sm font-black text-purple-400">{analysisResult.protein_g}ג'</p>
+                          <p className="text-sm font-black text-indigo-400">{analysisResult.protein_g}ג'</p>
                         )}
                       </div>
                       <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
@@ -379,10 +328,10 @@ export default function MealScannerModal({ isOpen, onClose }) {
                             type="number"
                             value={analysisResult.fats_g}
                             onChange={(e) => setAnalysisResult({ ...analysisResult, fats_g: Number(e.target.value) })}
-                            className="w-full text-center text-xs font-bold bg-transparent text-pink-400"
+                            className="w-full text-center text-xs font-bold bg-transparent text-rose-400"
                           />
                         ) : (
-                          <p className="text-sm font-black text-pink-400">{analysisResult.fats_g}ג'</p>
+                          <p className="text-sm font-black text-rose-400">{analysisResult.fats_g}ג'</p>
                         )}
                       </div>
                     </div>
@@ -395,7 +344,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
                     <button
                       onClick={handleSaveAiMeal}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
                     >
                       <Check className="w-4 h-4" /> הוסף ארוחה לתפריט היומי
                     </button>
@@ -409,7 +358,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
         {activeTab === 'manual' && (
           <form onSubmit={handleSaveManualMeal} className="space-y-4">
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-pink-500/10 border border-pink-500/30 text-pink-300 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
@@ -430,14 +379,14 @@ export default function MealScannerModal({ isOpen, onClose }) {
                   type="button"
                   onClick={handleAiCalculateManual}
                   disabled={isAiCalculatingManual}
-                  className="px-3.5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold shadow-md hover:scale-105 transition-all flex items-center gap-1.5 shrink-0"
+                  className="px-3.5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold shadow-md hover:opacity-95 transition-all flex items-center gap-1.5 shrink-0"
                   title="חשב ערכים אוטומטית לפי השם והגרמים בעזרת Gemini AI"
                 >
                   {isAiCalculatingManual ? (
                     <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   ) : (
                     <>
-                      <Wand2 className="w-4 h-4 text-cyan-300 animate-pulse" /> חישוב AI
+                      <Wand2 className="w-4 h-4 text-emerald-300 animate-pulse" /> חישוב AI
                     </>
                   )}
                 </button>
@@ -447,7 +396,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Scale className="w-3.5 h-3.5 text-cyan-400" /> משקל המנה (גרם)
+                  <Scale className="w-3.5 h-3.5 text-emerald-400" /> משקל המנה (גרם)
                 </label>
                 <input
                   type="number"
@@ -455,13 +404,13 @@ export default function MealScannerModal({ isOpen, onClose }) {
                   max="5000"
                   value={manualForm.weight_grams}
                   onChange={(e) => setManualForm({ ...manualForm, weight_grams: Number(e.target.value) })}
-                  className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-cyan-300"
+                  className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-emerald-300"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Flame className="w-3.5 h-3.5 text-cyan-400" /> סה"כ קלוריות (קל')
+                  <Flame className="w-3.5 h-3.5 text-emerald-400" /> סה"כ קלוריות (קל')
                 </label>
                 <input
                   type="number"
@@ -469,7 +418,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                   max="10000"
                   value={manualForm.total_calories}
                   onChange={(e) => setManualForm({ ...manualForm, total_calories: Number(e.target.value) })}
-                  className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-cyan-300"
+                  className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-emerald-300"
                 />
               </div>
             </div>
@@ -478,7 +427,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
               <label className="block text-xs font-semibold text-slate-400 mb-2">פירוט אבות המזון (גרמים)</label>
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <label className="block text-[10px] font-bold text-purple-400 mb-1 flex items-center gap-1">
+                  <label className="block text-[10px] font-bold text-indigo-400 mb-1 flex items-center gap-1">
                     <Dumbbell className="w-3 h-3" /> חלבון (ג')
                   </label>
                   <input
@@ -487,7 +436,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                     max="500"
                     value={manualForm.protein_g}
                     onChange={(e) => setManualForm({ ...manualForm, protein_g: Number(e.target.value) })}
-                    className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-purple-300 border border-purple-500/20"
+                    className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-indigo-300 border border-indigo-500/20"
                   />
                 </div>
 
@@ -506,7 +455,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <label className="block text-[10px] font-bold text-pink-400 mb-1 flex items-center gap-1">
+                  <label className="block text-[10px] font-bold text-rose-400 mb-1 flex items-center gap-1">
                     <PieChart className="w-3 h-3" /> שומנים (ג')
                   </label>
                   <input
@@ -515,7 +464,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                     max="500"
                     value={manualForm.fats_g}
                     onChange={(e) => setManualForm({ ...manualForm, fats_g: Number(e.target.value) })}
-                    className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-pink-300 border border-pink-500/20"
+                    className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-rose-300 border border-rose-500/20"
                   />
                 </div>
               </div>
@@ -523,7 +472,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 mt-4"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2 mt-4"
             >
               <PlusCircle className="w-4 h-4" /> הוסף ארוחה לתפריט
             </button>
