@@ -1,28 +1,24 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const REQUIRED_PROMPT = `You are a world-class registered dietitian and computer vision expert.
-Analyze this meal photo meticulously.
-1. Visually identify the EXACT food items shown in the photo. Name the food in HEBREW (e.g. "4 פרוסות אבטיח", "חזה עוף בגריל עם אורז").
-2. Estimate the portion size and total weight in grams based on visual scale, number of pieces, and plate dimensions.
-3. Calculate the EXACT realistic macronutrients for that specific food type:
-   - Watermelon: ~30 kcal per 100g (0g protein, 7.5g carbs, 0.2g fat).
-   - Chicken Breast: ~165 kcal per 100g (31g protein, 0g carbs, 3.6g fat).
-   - Rice: ~130 kcal per 100g (2.7g protein, 28g carbs, 0.3g fat).
-   - Eggs: ~140 kcal per 100g (12g protein, 1g carbs, 9.5g fat).
-4. Provide a clear, detailed HEBREW explanation in the "explanation" field describing:
-   - What exact items were recognized.
-   - How the total weight in grams was estimated from the visual count/plate scale.
-   - Why these specific calories and macros were assigned.
+const REQUIRED_PROMPT = `You are a world-class registered dietitian, nutritionist, and computer vision AI expert.
+Analyze the photo of this meal.
+1. IDENTIFY THE FOOD: Visually identify ALL food items in the image and write a clear, descriptive title in HEBREW (e.g. "4 פרוסות אבטיח טרי", "2 משולשי פיצה מרגריטה", "חזה עוף מוקפץ עם אורז וירקות", "סלט יווני עם גבינה בולגרית").
+2. ESTIMATE PORTION & WEIGHT: Estimate the total portion weight in grams based on item count, dimensions, and plate scale.
+3. CALCULATE ACCURATE MACROS: Calculate the realistic calories, protein (g), carbs (g), and fats (g) for the identified food items at that specific weight.
+4. EXPLAIN THE ESTIMATION IN HEBREW: In the "explanation" field, write 2-3 detailed sentences in HEBREW stating:
+   - Exactly what food items were identified in the photo.
+   - How the portion weight in grams was estimated from the visual item count / plate dimensions.
+   - How the calories and macronutrients were calculated.
 
 You MUST return your response STRICTLY as a JSON object with this exact schema:
 {
-  "food_name": string (in HEBREW, e.g. "4 פרוסות אבטיח"),
+  "food_name": string (in HEBREW),
   "total_calories": number,
   "protein_g": number,
   "carbs_g": number,
   "fats_g": number,
   "weight_grams": number,
-  "explanation": string (in HEBREW detailing what was identified and how grams/calories were calculated)
+  "explanation": string (in HEBREW detailing recognized food and portion estimation)
 }`;
 
 /**
@@ -81,38 +77,42 @@ function cleanAndParseJSON(text) {
 }
 
 /**
- * Intelligent Smart Fallback Nutritional Estimator (Hebrew aware)
+ * Universal Dynamic Nutritional Estimator for ANY food category in Hebrew
  */
 function calculateEstimatedMacrosForText(foodDesc = '', requestedGrams = 200) {
   const targetGrams = Number(requestedGrams) > 0 ? Number(requestedGrams) : 200;
-  const name = foodDesc.trim() || 'ארוחה מצולמת';
+  const name = foodDesc.trim() || 'מאכל מגוון';
   const nameLower = name.toLowerCase();
 
-  let p100 = 10;
+  // Default densities per 100g
+  let p100 = 8;
   let c100 = 15;
-  let f100 = 4;
-  let foodHebrewName = name;
+  let f100 = 5;
 
-  if (nameLower.includes('אבטיח') || nameLower.includes('watermelon')) {
-    foodHebrewName = 'פרוסות אבטיח טרי';
-    p100 = 0.6;
-    c100 = 7.5;
+  if (nameLower.includes('אבטיח') || nameLower.includes('מלון') || nameLower.includes('תפוח') || nameLower.includes('פרי') || nameLower.includes('תות') || nameLower.includes('ענבים')) {
+    p100 = 0.5;
+    c100 = 9;
     f100 = 0.2;
-  } else if (nameLower.includes('עוף') || nameLower.includes('chicken') || nameLower.includes('בשר') || nameLower.includes('beef')) {
-    foodHebrewName = 'חזה עוף / בשר';
-    p100 = 28;
-    c100 = 0;
-    f100 = 5;
-  } else if (nameLower.includes('דג') || nameLower.includes('סלמון') || nameLower.includes('salmon')) {
-    foodHebrewName = 'דג סלמון';
-    p100 = 22;
-    c100 = 0;
-    f100 = 12;
-  } else if (nameLower.includes('אורז') || nameLower.includes('פסטה') || nameLower.includes('תפוח אדמה')) {
-    foodHebrewName = 'תוספת פחמימה (אורז / פסטה)';
-    p100 = 3;
+  } else if (nameLower.includes('עוף') || nameLower.includes('בשר') || nameLower.includes('הודו') || nameLower.includes('שניצל') || nameLower.includes('המבורגר') || nameLower.includes('סטייק')) {
+    p100 = 26;
+    c100 = 2;
+    f100 = 8;
+  } else if (nameLower.includes('דג') || nameLower.includes('סלמון') || nameLower.includes('טונה') || nameLower.includes('סושי')) {
+    p100 = 20;
+    c100 = 10;
+    f100 = 7;
+  } else if (nameLower.includes('אורז') || nameLower.includes('פסטה') || nameLower.includes('פתיתים') || nameLower.includes('קוסקוס') || nameLower.includes('לחם')) {
+    p100 = 4;
     c100 = 28;
-    f100 = 1;
+    f100 = 1.5;
+  } else if (nameLower.includes('פיצה') || nameLower.includes('בורקס') || nameLower.includes('מלוואח') || nameLower.includes("ג'חנון")) {
+    p100 = 11;
+    c100 = 32;
+    f100 = 14;
+  } else if (nameLower.includes('סלט') || nameLower.includes('ירקות') || nameLower.includes('מלפפון') || nameLower.includes('עגבניה')) {
+    p100 = 1.5;
+    c100 = 4;
+    f100 = 3;
   }
 
   const ratio = targetGrams / 100;
@@ -122,25 +122,25 @@ function calculateEstimatedMacrosForText(foodDesc = '', requestedGrams = 200) {
   const total_calories = Math.round(protein_g * 4 + carbs_g * 4 + fats_g * 9);
 
   return {
-    food_name: foodHebrewName,
+    food_name: name,
     weight_grams: targetGrams,
     total_calories,
     protein_g,
     carbs_g,
     fats_g,
-    explanation: `זיהוי: ${foodHebrewName} (הערכת משקל: כ-${targetGrams} גרם לפי גודל המנה והצלחת).`
+    explanation: `זיהוי: ${name} (משקל מוערך: כ-${targetGrams} גרם לפי גודל המנה והצלחת).`
   };
 }
 
 /**
- * Main AI Meal Image Analysis Function using Gemini Vision Model
+ * Universal Gemini Vision AI Meal Image Analysis Function
  */
 export async function analyzeMealImage(dataUrl, customApiKey = '') {
   const apiKey = customApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
 
   if (!apiKey || apiKey.trim() === '') {
     await new Promise((res) => setTimeout(res, 1200));
-    return calculateEstimatedMacrosForText('אבטיח טרי', 350);
+    return calculateEstimatedMacrosForText('ארוחה מצולמת', 250);
   }
 
   try {
@@ -173,7 +173,7 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
           carbs_g: Math.max(0, Number(parsedData.carbs_g) || 0),
           fats_g: Math.max(0, Number(parsedData.fats_g) || 0),
           weight_grams: Math.max(10, Number(parsedData.weight_grams) || 200),
-          explanation: parsedData.explanation || 'המצלמה זיהתה את המאכל והערריכה את גודל המנה והקלוריות לפי גודל הצלחת.',
+          explanation: parsedData.explanation || 'ה-AI זיהה את המאכל, העריך את משקלו לפי גודל הצלחת וחישב קלוריות ומאקרו.',
           isMock: false
         };
       } catch (err) {
@@ -190,7 +190,7 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
 }
 
 /**
- * Text-Based AI Meal Analysis (calculates macros for typed food name & requested grams)
+ * Text-Based Universal AI Meal Analysis
  */
 export async function analyzeMealText(foodName, weightGrams = 100, customApiKey = '') {
   const apiKey = customApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
@@ -204,7 +204,7 @@ export async function analyzeMealText(foodName, weightGrams = 100, customApiKey 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelNames = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'];
-    const prompt = `You are an expert nutritionist. Analyze this food item: "${foodName}" for a portion size of EXACTLY ${requestedWeight} grams. Identify the exact food item and name it in HEBREW. Calculate accurate nutritional macros (watermelon has 0g protein, chicken has ~31g protein per 100g, etc.). You MUST return the response strictly as a JSON object with this exact structure: { "food_name": string (in HEBREW), "total_calories": number, "protein_g": number, "carbs_g": number, "fats_g": number, "weight_grams": number, "explanation": string (in HEBREW) }. Notice: weight_grams MUST be equal to ${requestedWeight}.`;
+    const prompt = `You are a world-class registered dietitian. Analyze this food item: "${foodName}" for a portion size of EXACTLY ${requestedWeight} grams. Identify the food item and name it in HEBREW. Calculate accurate nutritional macros for that specific food item. You MUST return the response strictly as a JSON object with this exact structure: { "food_name": string (in HEBREW), "total_calories": number, "protein_g": number, "carbs_g": number, "fats_g": number, "weight_grams": number, "explanation": string (in HEBREW detailing what was identified and macro calculation) }. Notice: weight_grams MUST be equal to ${requestedWeight}.`;
 
     let lastError = null;
 
