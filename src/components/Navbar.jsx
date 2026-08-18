@@ -1,11 +1,10 @@
 import React from 'react';
-import { Flame, Calendar, User, ChevronLeft, ChevronRight, LogOut, LogIn, Sparkles } from 'lucide-react';
+import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAuthModal }) {
+export default function Navbar({ onOpenProfileModal, onOpenAuthModal }) {
   const selectedDate = useFitnessStore((state) => state.selectedDate);
   const setSelectedDate = useFitnessStore((state) => state.setSelectedDate);
-  const geminiApiKey = useFitnessStore((state) => state.geminiApiKey);
   const user = useFitnessStore((state) => state.user);
   const logout = useFitnessStore((state) => state.logout);
 
@@ -75,28 +74,13 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
           </button>
         </div>
 
-        {/* Actions & User Profile */}
+        {/* User Auth & Profile Actions */}
         <div className="flex items-center space-x-2 space-x-reverse">
-          <button
-            onClick={onOpenApiKeyModal}
-            className={`p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${
-              geminiApiKey
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-                : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-            }`}
-            title="הגדרות Gemini AI"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">
-              {geminiApiKey ? 'ניתוח AI פעיל' : 'מפתח API'}
-            </span>
-          </button>
-
           {user ? (
             <div className="flex items-center space-x-1 space-x-reverse">
               <button
                 onClick={onOpenProfileModal}
-                className="flex items-center space-x-2 space-x-reverse px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 text-xs font-bold text-slate-200 transition-all"
+                className="flex items-center space-x-2 space-x-reverse px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 text-xs font-bold text-slate-200 transition-all"
               >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-emerald-500 to-indigo-500 flex items-center justify-center text-[10px] font-black text-white">
                   {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}

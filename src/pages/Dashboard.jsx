@@ -21,7 +21,6 @@ import WaterTrackerWidget from '../components/WaterTrackerWidget';
 import MealScannerModal from '../components/MealScannerModal';
 import MealLogItem from '../components/MealLogItem';
 import OnboardingModal from '../components/OnboardingModal';
-import ApiKeyModal from '../components/ApiKeyModal';
 import AuthModal from '../components/AuthModal';
 
 export default function Dashboard() {
@@ -36,7 +35,6 @@ export default function Dashboard() {
   // Modal open states
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Auto trigger onboarding if not completed yet
@@ -68,7 +66,6 @@ export default function Dashboard() {
 
       {/* Main Header / Navbar */}
       <Navbar
-        onOpenApiKeyModal={() => setIsApiKeyOpen(true)}
         onOpenProfileModal={() => setIsOnboardingOpen(true)}
         onOpenAuthModal={() => setIsAuthOpen(true)}
       />
@@ -245,7 +242,6 @@ export default function Dashboard() {
       {/* Modals */}
       <MealScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
       <OnboardingModal isOpen={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
-      <ApiKeyModal isOpen={isApiKeyOpen} onClose={() => setIsApiKeyOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
