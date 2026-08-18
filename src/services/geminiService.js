@@ -25,16 +25,13 @@ function parseBase64Image(dataUrl) {
 function cleanAndParseJSON(text) {
   let cleanText = text.trim();
   
-  // Remove markdown codeblock syntax if present (```json ... ```)
   if (cleanText.startsWith('```')) {
     cleanText = cleanText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
   }
 
-  // Attempt direct JSON parse
   try {
     return JSON.parse(cleanText);
   } catch (err) {
-    // If there's leading/trailing non-json text, regex extract the first JSON object
     const match = cleanText.match(/\{[\s\S]*\}/);
     if (match) {
       return JSON.parse(match[0]);
@@ -46,69 +43,50 @@ function cleanAndParseJSON(text) {
 /**
  * Realistic Mock Analyzer fallback when no Gemini API Key is configured
  */
-function generateMockMealAnalysis(base64Image) {
+function generateMockMealAnalysis(foodDesc = '') {
   const mockDatabase = [
     {
-      food_name: 'Grilled Chicken Breast with Quinoa & Roasted Veggies',
-      total_calories: 520,
-      protein_g: 46,
-      carbs_g: 48,
-      fats_g: 14,
-      weight_grams: 410,
-      explanation: 'High-protein balanced fitness meal with lean chicken breast, nutrient-dense quinoa, and roasted broccoli with olive oil.'
-    },
-    {
-      food_name: 'Salmon Avocado Power Bowl',
-      total_calories: 640,
-      protein_g: 38,
-      carbs_g: 42,
-      fats_g: 32,
-      weight_grams: 450,
-      explanation: 'Healthy fats & protein rich meal featuring seared Atlantic salmon, ripe avocado slices, brown rice, and edamame.'
-    },
-    {
-      food_name: 'Oatmeal with Whey Protein, Berries & Almond Butter',
-      total_calories: 430,
-      protein_g: 28,
-      carbs_g: 54,
-      fats_g: 12,
+      food_name: foodDesc || 'Grilled Chicken Breast & Rice',
+      total_calories: 480,
+      protein_g: 42,
+      carbs_g: 45,
+      fats_g: 10,
       weight_grams: 350,
-      explanation: 'Complex carbohydrates and fast-digesting protein breakfast with blueberry antioxidants and almond butter.'
+      explanation: 'Balanced fitness meal calculation based on lean protein and complex carbs.'
     },
     {
-      food_name: 'Ribeye Steak with Sweet Potato & Asparagus',
-      total_calories: 780,
-      protein_g: 58,
-      carbs_g: 36,
-      fats_g: 42,
-      weight_grams: 480,
-      explanation: 'High calorie muscle-building meal with 250g grilled ribeye, baked sweet potato wedges, and buttered asparagus.'
+      food_name: foodDesc || 'Avocado Egg Toast',
+      total_calories: 390,
+      protein_g: 18,
+      carbs_g: 32,
+      fats_g: 22,
+      weight_grams: 250,
+      explanation: 'Healthy fats, complex carbs, and moderate protein breakfast.'
     }
   ];
 
   const randomSample = mockDatabase[Math.floor(Math.random() * mockDatabase.length)];
   return {
     ...randomSample,
+    food_name: foodDesc || randomSample.food_name,
     isMock: true
   };
 }
 
 /**
- * Main AI Meal Analysis Function using Gemini Vision Model
+ * Main AI Meal Image Analysis Function using Gemini Vision Model
  */
 export async function analyzeMealImage(dataUrl, customApiKey = '') {
   const apiKey = customApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
 
-  // If no API Key is available, use smooth fallback mock response
   if (!apiKey || apiKey.trim() === '') {
     console.warn('Gemini API Key missing. Returning realistic simulated meal analysis.');
-    await new Promise((res) => setTimeout(res, 1800)); // Simulate AI processing delay
-    return generateMockMealAnalysis(dataUrl);
+    await new Promise((res) => setTimeout(res, 1800));
+    return generateMockMealAnalysis();
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Using standard fast vision model
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const { base64Data, mimeType } = parseBase64Image(dataUrl);
@@ -126,7 +104,6 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
 
     const parsedData = cleanAndParseJSON(textOutput);
 
-    // Validate required fields
     return {
       food_name: parsedData.food_name || 'Scanned Meal',
       total_calories: Number(parsedData.total_calories) || 0,
@@ -139,7 +116,45 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
     };
   } catch (error) {
     console.error('Gemini Vision AI Analysis Error:', error);
-    // Fallback if API call fails (e.g., quota error or bad key)
     throw new Error(error?.message || 'Failed to analyze meal with Gemini AI.');
+  }
+}
+
+/**
+ * Text-Based AI Meal Analysis (calculates macros for typed food name & grams)
+ */
+export async function analyzeMealText(foodName, weightGrams = 200, customApiKey = '') {
+  const apiKey = customApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+
+  if (!apiKey || apiKey.trim() === '') {
+    await new Promise((res) => setTimeout(res, 1200));
+    return generateMockMealAnalysis(foodName);
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    const prompt = `Analyze this food item: "${foodName}" weighing ${weightGrams} grams. Calculate the exact nutritional breakdown. You MUST return the response strictly as a JSON object with this exact structure: { "food_name": string, "total_calories": number, "protein_g": number, "carbs_g": number, "fats_g": number, "weight_grams": number, "explanation": string }.`;
+
+    const result = await model.generateContent([prompt]);
+    const response = await result.response;
+    const textOutput = response.text();
+
+    const parsedData = cleanAndParseJSON(textOutput);
+
+    return {
+      food_name: parsedData.food_name || foodName,
+      total_calories: Number(parsedData.total_calories) || 0,
+      protein_g: Number(parsedData.protein_g) || 0,
+      carbs_g: Number(parsedData.carbs_g) || 0,
+      fats_g: Number(parsedData.fats_g) || 0,
+      weight_grams: Number(parsedData.weight_grams) || Number(weightGrams),
+      explanation: parsedData.explanation || 'Calculated by Gemini AI',
+      isMock: false
+    };
+  } catch (error) {
+    console.error('Gemini Text AI Analysis Error:', error);
+    throw new Error(error?.message || 'Failed to calculate macros with Gemini AI.');
   }
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, Sparkles, X, Check, RefreshCw, AlertCircle, Edit3, PlusCircle, Scale, Flame, Dumbbell, Wheat, PieChart } from 'lucide-react';
-import { analyzeMealImage } from '../services/geminiService';
+import { Camera, Upload, Sparkles, X, Check, RefreshCw, AlertCircle, Edit3, PlusCircle, Scale, Flame, Dumbbell, Wheat, PieChart, Wand2 } from 'lucide-react';
+import { analyzeMealImage, analyzeMealText } from '../services/geminiService';
 import { useFitnessStore } from '../store/useFitnessStore';
 
 export default function MealScannerModal({ isOpen, onClose }) {
@@ -28,6 +28,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
     fats_g: 10,
     explanation: 'Manual Meal Entry'
   });
+  const [isAiCalculatingManual, setIsAiCalculatingManual] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -61,6 +62,33 @@ export default function MealScannerModal({ isOpen, onClose }) {
     }
   };
 
+  const handleAiCalculateManual = async () => {
+    if (!manualForm.food_name.trim()) {
+      setErrorMsg('Please enter a food name to auto-calculate (e.g. "Chicken breast & rice").');
+      return;
+    }
+    setIsAiCalculatingManual(true);
+    setErrorMsg('');
+    try {
+      const res = await analyzeMealText(manualForm.food_name, manualForm.weight_grams, geminiApiKey);
+      setManualForm({
+        ...manualForm,
+        food_name: res.food_name,
+        total_calories: res.total_calories,
+        protein_g: res.protein_g,
+        carbs_g: res.carbs_g,
+        fats_g: res.fats_g,
+        weight_grams: res.weight_grams,
+        explanation: res.explanation
+      });
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Failed to auto-calculate macros with Gemini AI.');
+    } finally {
+      setIsAiCalculatingManual(false);
+    }
+  };
+
   const handleSaveAiMeal = () => {
     if (!analysisResult) return;
     addMeal({
@@ -85,7 +113,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
       protein_g: Number(manualForm.protein_g) || 0,
       carbs_g: Number(manualForm.carbs_g) || 0,
       fats_g: Number(manualForm.fats_g) || 0,
-      explanation: 'Manually logged meal entry',
+      explanation: manualForm.explanation || 'Manually logged meal entry',
       image: null
     });
 
@@ -99,6 +127,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
     setErrorMsg('');
     setIsAnalyzing(false);
     setIsEditing(false);
+    setIsAiCalculatingManual(false);
     setManualForm({
       food_name: '',
       weight_grams: 200,
@@ -383,7 +412,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* TAB 2: MANUAL ENTRY FORM */}
+        {/* TAB 2: MANUAL ENTRY FORM WITH AI AUTO-ESTIMATE */}
         {activeTab === 'manual' && (
           <form onSubmit={handleSaveManualMeal} className="space-y-4">
             {errorMsg && (
@@ -395,14 +424,31 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">Food / Dish Name</label>
-              <input
-                type="text"
-                placeholder="e.g., Rice with Beef & Avocado"
-                value={manualForm.food_name}
-                onChange={(e) => setManualForm({ ...manualForm, food_name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl glass-input text-xs font-bold"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g., 2 Scrambled Eggs with Avocado & Whole Wheat Toast"
+                  value={manualForm.food_name}
+                  onChange={(e) => setManualForm({ ...manualForm, food_name: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl glass-input text-xs font-bold"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={handleAiCalculateManual}
+                  disabled={isAiCalculatingManual}
+                  className="px-3.5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold shadow-md hover:scale-105 transition-all flex items-center gap-1.5 shrink-0"
+                  title="Auto-calculate calories and macros using Gemini AI"
+                >
+                  {isAiCalculatingManual ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 text-cyan-300 animate-pulse" /> AI Estimate
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -482,6 +528,12 @@ export default function MealScannerModal({ isOpen, onClose }) {
                 </div>
               </div>
             </div>
+
+            {manualForm.explanation && (
+              <p className="text-xs text-slate-300 italic bg-slate-800/40 p-2.5 rounded-xl border border-slate-700/40">
+                "{manualForm.explanation}"
+              </p>
+            )}
 
             <button
               type="submit"
