@@ -34,9 +34,9 @@ export default function MacroProgressBar({ label, consumed = 0, target = 100, co
           {Icon && <Icon className={`w-4 h-4 ${style.text}`} />}
           <span className="text-xs font-bold text-slate-200 tracking-wide">{label}</span>
         </div>
-        <div className="flex items-center space-x-1">
-          <span className="text-sm font-extrabold text-white">{consumed}</span>
-          <span className="text-xs text-slate-400 font-medium">/ {target}g</span>
+        <div className="flex items-center space-x-1 space-x-reverse">
+          <span className="text-sm font-extrabold text-white">{consumed}ג'</span>
+          <span className="text-xs text-slate-400 font-medium">/ {target}ג'</span>
         </div>
       </div>
 
@@ -52,8 +52,8 @@ export default function MacroProgressBar({ label, consumed = 0, target = 100, co
 
       {/* Subtext info */}
       <div className="flex items-center justify-between mt-2 text-[11px] text-slate-400">
-        <span>{Math.round(percent)}% reached</span>
-        <span className="font-semibold">{Math.max(0, target - consumed)}g remaining</span>
+        <span>{Math.round(percent)}% מהיעד</span>
+        <span className="font-semibold">נשארו עוד {Math.max(0, target - consumed)}ג'</span>
       </div>
     </div>
   );

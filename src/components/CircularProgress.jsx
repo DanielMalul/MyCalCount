@@ -61,9 +61,9 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
 
         {/* Center Calorie Display */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <div className="flex items-center space-x-1 text-cyan-400 mb-0.5">
+          <div className="flex items-center space-x-1 space-x-reverse text-cyan-400 mb-0.5">
             <Flame className="w-4 h-4 animate-bounce" />
-            <span className="text-[11px] font-bold tracking-wider uppercase">Consumed</span>
+            <span className="text-[11px] font-bold tracking-wider">קלוריות שנצרכו</span>
           </div>
 
           <motion.span
@@ -76,7 +76,7 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
           </motion.span>
 
           <div className="text-xs text-slate-400 font-medium mt-0.5">
-            / <span className="text-slate-200 font-bold">{target.toLocaleString()}</span> kcal
+            מתוך <span className="text-slate-200 font-bold">{target.toLocaleString()}</span> קלוריות
           </div>
         </div>
       </div>
@@ -85,14 +85,14 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
       <div className="mt-4 w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800">
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-purple-400" />
-          <span className="text-xs text-slate-400 font-medium">Remaining:</span>
+          <span className="text-xs text-slate-400 font-medium">יעד יומי:</span>
         </div>
         <span
           className={`text-xs font-bold ${
             isOverTarget ? 'text-pink-400 neon-text-pink' : 'text-cyan-400 neon-text-cyan'
           }`}
         >
-          {isOverTarget ? `+${Math.abs(remaining)} kcal over` : `${remaining} kcal left`}
+          {isOverTarget ? `חריגה של ${Math.abs(remaining)} קלוריות` : `נשארו עוד ${remaining} קלוריות`}
         </span>
       </div>
     </div>

@@ -31,7 +31,7 @@ export const useFitnessStore = create(
   persist(
     (set, get) => ({
       // User Auth State
-      user: null, // { uid, email, displayName, photoURL }
+      user: null,
       isAuthLoading: false,
 
       // User Profile & Onboarding State
@@ -43,7 +43,7 @@ export const useFitnessStore = create(
       // Selected Date Filter
       selectedDate: getTodayString(),
 
-      // Daily Logs - Starts Completely Clean (No fake data)
+      // Daily Logs - Clean Start
       loggedMeals: [],
       waterMl: 0,
       steps: 0,
@@ -104,7 +104,7 @@ export const useFitnessStore = create(
       loginWithGoogle: async () => {
         set({ isAuthLoading: true });
         if (!isFirebaseConfigured || !auth || !googleProvider) {
-          const mockUser = { uid: 'user_google', email: 'user@gmail.com', displayName: 'Google User' };
+          const mockUser = { uid: 'user_google', email: 'user@gmail.com', displayName: 'משתמש גוגל' };
           set({ user: mockUser, isAuthLoading: false });
           return mockUser;
         }
@@ -170,14 +170,14 @@ export const useFitnessStore = create(
         const newMeal = {
           id: 'meal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
           date: dateStr,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          food_name: meal.food_name || 'Meal Entry',
+          timestamp: new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+          food_name: meal.food_name || 'ארוחה',
           total_calories: Number(meal.total_calories) || 0,
           protein_g: Number(meal.protein_g) || 0,
           carbs_g: Number(meal.carbs_g) || 0,
           fats_g: Number(meal.fats_g) || 0,
           weight_grams: Number(meal.weight_grams) || 200,
-          explanation: meal.explanation || 'Analyzed via Gemini Vision AI',
+          explanation: meal.explanation || 'נותח באמצעות Gemini AI',
           image: meal.image || null
         };
         const updatedMeals = [newMeal, ...get().loggedMeals];
@@ -193,8 +193,34 @@ export const useFitnessStore = create(
         }
       },
 
+      updateMeal: (id, updatedFields) => {
+        const updatedMeals = get().loggedMeals.map((m) => (m.id === id ? { ...m, ...updatedFields } : m));
+        set({ loggedMeals: updatedMeals });
+
+        const user = get().user;
+        const dateStr = get().selectedDate;
+        if (isFirebaseConfigured && db && user?.uid) {
+          try {
+            setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: updatedMeals }, { merge: true });
+          } catch (e) {
+            console.error('Firestore update sync error:', e);
+          }
+        }
+      },
+
       deleteMeal: (id) => {
-        set({ loggedMeals: get().loggedMeals.filter((m) => m.id !== id) });
+        const updatedMeals = get().loggedMeals.filter((m) => m.id !== id);
+        set({ loggedMeals: updatedMeals });
+
+        const user = get().user;
+        const dateStr = get().selectedDate;
+        if (isFirebaseConfigured && db && user?.uid) {
+          try {
+            setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: updatedMeals }, { merge: true });
+          } catch (e) {
+            console.error('Firestore delete sync error:', e);
+          }
+        }
       },
 
       // Water & Steps Tracking

@@ -24,9 +24,9 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
   const formatDateLabel = (dateStr) => {
-    if (isToday) return 'Today';
+    if (isToday) return 'היום';
     const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('he-IL', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -34,7 +34,7 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
       <div className="max-w-5xl mx-auto flex items-center justify-between">
         
         {/* Brand Logo */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 space-x-reverse">
           <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-400 via-purple-500 to-pink-500 shadow-lg shadow-cyan-500/25">
             <Flame className="w-5 h-5 text-white" />
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -51,7 +51,7 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
                 VISION AI
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">Smart Macro & Fitness Tracker</p>
+            <p className="text-[11px] text-slate-400 font-medium">מעקב תזונה וכושר חכם</p>
           </div>
         </div>
 
@@ -60,9 +60,9 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
           <button
             onClick={handlePrevDay}
             className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-            title="Previous Day"
+            title="יום קודם"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4" />
           </button>
           <div className="flex items-center px-3 gap-1.5 min-w-[90px] justify-center">
             <Calendar className="w-3.5 h-3.5 text-cyan-400" />
@@ -71,14 +71,14 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
           <button
             onClick={handleNextDay}
             className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-            title="Next Day"
+            title="יום הבא"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
         </div>
 
         {/* Action Controls & Auth User Badge */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 space-x-reverse">
           {/* Gemini API Key Status */}
           <button
             onClick={onOpenApiKeyModal}
@@ -87,20 +87,20 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
                 : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
             }`}
-            title="Gemini API Key Settings"
+            title="הגדרות Gemini API"
           >
             <Sparkles className="w-4 h-4" />
             <span className="hidden sm:inline">
-              {geminiApiKey ? 'Gemini AI Active' : 'API Key Setup'}
+              {geminiApiKey ? 'Gemini AI פעיל' : 'הגדרת API'}
             </span>
           </button>
 
           {/* User Auth Badge / Login Button */}
           {user ? (
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 space-x-reverse">
               <button
                 onClick={onOpenProfileModal}
-                className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 hover:border-cyan-400/50 text-xs font-bold text-slate-200 transition-all"
+                className="flex items-center space-x-2 space-x-reverse px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 hover:border-cyan-400/50 text-xs font-bold text-slate-200 transition-all"
               >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-600 flex items-center justify-center text-[10px] font-black text-white">
                   {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
@@ -111,7 +111,7 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
               <button
                 onClick={logout}
                 className="p-2 rounded-xl text-slate-400 hover:text-pink-400 hover:bg-pink-500/10 transition-colors"
-                title="Sign Out"
+                title="התנתקות"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -122,7 +122,7 @@ export default function Navbar({ onOpenApiKeyModal, onOpenProfileModal, onOpenAu
               className="px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold text-xs shadow-md hover:scale-105 transition-transform flex items-center gap-1.5"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Login</span>
+              <span>התחברות</span>
             </button>
           )}
         </div>

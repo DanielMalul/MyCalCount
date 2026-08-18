@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, Sparkles, X, Check, LogIn, UserPlus, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { User, Mail, Lock, X, LogIn, UserPlus, AlertCircle } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import { isFirebaseConfigured } from '../config/firebase';
 
@@ -23,14 +23,14 @@ export default function AuthModal({ isOpen, onClose }) {
     setErrorMsg('');
 
     if (!email || !password) {
-      setErrorMsg('Please enter email and password.');
+      setErrorMsg('אנא הכנס דוא"ל וסיסמה.');
       return;
     }
 
     try {
       if (mode === 'signup') {
         if (!name) {
-          setErrorMsg('Please enter your full name.');
+          setErrorMsg('אנא הכנס שם מלא.');
           return;
         }
         await registerWithEmail(name, email, password);
@@ -40,7 +40,7 @@ export default function AuthModal({ isOpen, onClose }) {
       onClose();
     } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Authentication failed.');
+      setErrorMsg(err.message || 'התחברות נכשלה.');
     }
   };
 
@@ -51,7 +51,7 @@ export default function AuthModal({ isOpen, onClose }) {
       onClose();
     } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Google sign-in failed.');
+      setErrorMsg(err.message || 'התחברות עם גוגל נכשלה.');
     }
   };
 
@@ -63,18 +63,17 @@ export default function AuthModal({ isOpen, onClose }) {
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-full max-w-md glass-panel rounded-3xl p-6 sm:p-8 text-white shadow-2xl border border-slate-700/60"
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center space-x-2.5 space-x-reverse">
             <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-cyan-400 via-purple-500 to-pink-500 shadow-lg shadow-cyan-500/20">
               <User className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-100">
-                {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+                {mode === 'login' ? 'ברוך הבא למערכת' : 'הרשמה לחשבון חדש'}
               </h2>
               <p className="text-xs text-slate-400">
-                {isFirebaseConfigured ? 'Firebase Auth & Cloud Sync' : 'Fitness Cloud Profile'}
+                {isFirebaseConfigured ? 'אבטחת Firebase וסנכרון ענן' : 'פרופיל תזונה וכושר'}
               </p>
             </div>
           </div>
@@ -86,7 +85,6 @@ export default function AuthModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Login / Sign Up Tab Switcher */}
         <div className="flex bg-slate-900/80 p-1 rounded-2xl border border-slate-800 mb-6">
           <button
             type="button"
@@ -100,7 +98,7 @@ export default function AuthModal({ isOpen, onClose }) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <LogIn className="w-3.5 h-3.5" /> Sign In
+            <LogIn className="w-3.5 h-3.5" /> התחברות
           </button>
           <button
             type="button"
@@ -114,11 +112,10 @@ export default function AuthModal({ isOpen, onClose }) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <UserPlus className="w-3.5 h-3.5" /> Register
+            <UserPlus className="w-3.5 h-3.5" /> הרשמה
           </button>
         </div>
 
-        {/* Error Notification */}
         {errorMsg && (
           <div className="mb-4 p-3 rounded-xl bg-pink-500/10 border border-pink-500/30 text-pink-300 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -126,49 +123,48 @@ export default function AuthModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'signup' && (
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Full Name</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">שם מלא</label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Daniel Smith"
+                  placeholder="דניאל מלול"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs"
+                  className="w-full pr-10 pl-4 py-3 rounded-xl glass-input text-xs font-bold"
                 />
-                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <User className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Email Address</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">כתובת דוא"ל</label>
             <div className="relative">
               <input
                 type="email"
                 placeholder="user@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs"
+                className="w-full pr-10 pl-4 py-3 rounded-xl glass-input text-xs font-bold"
               />
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Mail className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Password</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">סיסמה</label>
             <div className="relative">
               <input
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs"
+                className="w-full pr-10 pl-4 py-3 rounded-xl glass-input text-xs font-bold"
               />
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Lock className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
             </div>
           </div>
 
@@ -181,24 +177,22 @@ export default function AuthModal({ isOpen, onClose }) {
               <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
             ) : mode === 'login' ? (
               <>
-                <LogIn className="w-4 h-4" /> Sign In to App
+                <LogIn className="w-4 h-4" /> התחבר למערכת
               </>
             ) : (
               <>
-                <UserPlus className="w-4 h-4" /> Create Account
+                <UserPlus className="w-4 h-4" /> צור חשבון חדש
               </>
             )}
           </button>
         </form>
 
-        {/* Divider */}
         <div className="my-5 flex items-center text-slate-600">
           <div className="flex-1 h-px bg-slate-800" />
-          <span className="px-3 text-[11px] font-semibold text-slate-500 uppercase">Or continue with</span>
+          <span className="px-3 text-[11px] font-semibold text-slate-500">או התחבר באמצעות</span>
           <div className="flex-1 h-px bg-slate-800" />
         </div>
 
-        {/* Social Google Login Button */}
         <button
           type="button"
           onClick={handleGoogleLogin}
@@ -222,7 +216,7 @@ export default function AuthModal({ isOpen, onClose }) {
               d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"
             />
           </svg>
-          Google Account
+          חשבון Google
         </button>
       </motion.div>
     </div>
