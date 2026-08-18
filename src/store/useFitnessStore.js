@@ -43,7 +43,7 @@ export const useFitnessStore = create(
       // Selected Date Filter
       selectedDate: getTodayString(),
 
-      // Daily Logs - Clean Start
+      // Daily Logs - Strictly Zero Defaults (No Mock Data)
       loggedMeals: [],
       waterMl: 0,
       steps: 0,
@@ -231,6 +231,9 @@ export const useFitnessStore = create(
       setSteps: (count) => set({ steps: Math.max(0, count) }),
       setStepTarget: (target) => set({ stepTarget: target }),
 
+      // Reset mock data helper
+      resetAllData: () => set({ waterMl: 0, steps: 0, loggedMeals: [] }),
+
       // Metrics Calculators for Selected Date
       getDailyTotals: () => {
         const state = get();
@@ -250,7 +253,7 @@ export const useFitnessStore = create(
       }
     }),
     {
-      name: 'mycalcount-fitness-storage'
+      name: 'mycalcount-fitness-storage-v2' // Bumped storage name to wipe old cached 4134 steps & 1250ml water
     }
   )
 );
