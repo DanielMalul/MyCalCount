@@ -16,14 +16,15 @@ export default function MealScannerModal({ isOpen, onClose }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
+  // Clean empty state with zero/empty defaults (No pre-filled numbers)
   const [manualForm, setManualForm] = useState({
     food_name: '',
-    weight_grams: 200,
-    total_calories: 350,
-    protein_g: 25,
-    carbs_g: 35,
-    fats_g: 10,
-    explanation: 'הזנה ידנית של ארוחה'
+    weight_grams: '',
+    total_calories: '',
+    protein_g: '',
+    carbs_g: '',
+    fats_g: '',
+    explanation: ''
   });
   const [isAiCalculatingManual, setIsAiCalculatingManual] = useState(false);
 
@@ -61,13 +62,15 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
   const handleAiCalculateManual = async () => {
     if (!manualForm.food_name.trim()) {
-      setErrorMsg('אנא הכנס שם מאכל לחישוב (למשל "חזה עוף ואורז").');
+      setErrorMsg('אנא הכנס שם מאכל (למשל "חזה עוף ואורז").');
       return;
     }
+    const requestedWeight = Number(manualForm.weight_grams) > 0 ? Number(manualForm.weight_grams) : 100;
     setIsAiCalculatingManual(true);
     setErrorMsg('');
+
     try {
-      const res = await analyzeMealText(manualForm.food_name, manualForm.weight_grams, geminiApiKey);
+      const res = await analyzeMealText(manualForm.food_name, requestedWeight, geminiApiKey);
       setManualForm({
         ...manualForm,
         food_name: res.food_name,
@@ -75,7 +78,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
         protein_g: res.protein_g,
         carbs_g: res.carbs_g,
         fats_g: res.fats_g,
-        weight_grams: res.weight_grams,
+        weight_grams: requestedWeight, // Keeps the user's requested grams strictly intact
         explanation: res.explanation
       });
     } catch (err) {
@@ -127,12 +130,12 @@ export default function MealScannerModal({ isOpen, onClose }) {
     setIsAiCalculatingManual(false);
     setManualForm({
       food_name: '',
-      weight_grams: 200,
-      total_calories: 350,
-      protein_g: 25,
-      carbs_g: 35,
-      fats_g: 10,
-      explanation: 'הזנה ידנית של ארוחה'
+      weight_grams: '',
+      total_calories: '',
+      protein_g: '',
+      carbs_g: '',
+      fats_g: '',
+      explanation: ''
     });
   };
 
@@ -369,7 +372,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="למשל: 2 ביצים מקושקשות עם אבוקדו וטוסט"
+                  placeholder="למשל: חזה עוף / 2 ביצים מקושקשות"
                   value={manualForm.food_name}
                   onChange={(e) => setManualForm({ ...manualForm, food_name: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl glass-input text-xs font-bold"
@@ -402,8 +405,9 @@ export default function MealScannerModal({ isOpen, onClose }) {
                   type="number"
                   min="1"
                   max="5000"
+                  placeholder="למשל: 200"
                   value={manualForm.weight_grams}
-                  onChange={(e) => setManualForm({ ...manualForm, weight_grams: Number(e.target.value) })}
+                  onChange={(e) => setManualForm({ ...manualForm, weight_grams: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-emerald-300"
                 />
               </div>
@@ -416,8 +420,9 @@ export default function MealScannerModal({ isOpen, onClose }) {
                   type="number"
                   min="0"
                   max="10000"
+                  placeholder="למשל: 300"
                   value={manualForm.total_calories}
-                  onChange={(e) => setManualForm({ ...manualForm, total_calories: Number(e.target.value) })}
+                  onChange={(e) => setManualForm({ ...manualForm, total_calories: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-emerald-300"
                 />
               </div>
@@ -434,8 +439,9 @@ export default function MealScannerModal({ isOpen, onClose }) {
                     type="number"
                     min="0"
                     max="500"
+                    placeholder="0"
                     value={manualForm.protein_g}
-                    onChange={(e) => setManualForm({ ...manualForm, protein_g: Number(e.target.value) })}
+                    onChange={(e) => setManualForm({ ...manualForm, protein_g: e.target.value })}
                     className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-indigo-300 border border-indigo-500/20"
                   />
                 </div>
@@ -448,8 +454,9 @@ export default function MealScannerModal({ isOpen, onClose }) {
                     type="number"
                     min="0"
                     max="1000"
+                    placeholder="0"
                     value={manualForm.carbs_g}
-                    onChange={(e) => setManualForm({ ...manualForm, carbs_g: Number(e.target.value) })}
+                    onChange={(e) => setManualForm({ ...manualForm, carbs_g: e.target.value })}
                     className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-amber-300 border border-amber-500/20"
                   />
                 </div>
@@ -462,8 +469,9 @@ export default function MealScannerModal({ isOpen, onClose }) {
                     type="number"
                     min="0"
                     max="500"
+                    placeholder="0"
                     value={manualForm.fats_g}
-                    onChange={(e) => setManualForm({ ...manualForm, fats_g: Number(e.target.value) })}
+                    onChange={(e) => setManualForm({ ...manualForm, fats_g: e.target.value })}
                     className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-rose-300 border border-rose-500/20"
                   />
                 </div>
