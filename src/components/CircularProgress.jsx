@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { Flame, Zap } from 'lucide-react';
 
 export default function CircularProgress({ consumed = 0, target = 2000, bmr = 1700, tdee = 2200 }) {
-  const radius = 80;
-  const strokeWidth = 14;
+  const radius = 75;
+  const strokeWidth = 12;
   const circumference = 2 * Math.PI * radius;
 
   const percentage = Math.min(100, Math.max(0, (consumed / (target || 1)) * 100));
@@ -14,13 +14,13 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
   const isOverTarget = remaining < 0;
 
   return (
-    <div className="relative flex flex-col items-center justify-center p-6 glass-panel rounded-3xl border border-slate-800/60 shadow-xl">
+    <div className="relative flex flex-col items-center justify-center p-4 sm:p-6 glass-panel rounded-2xl sm:rounded-3xl border border-slate-800/60 shadow-xl overflow-hidden">
       {/* Background Soft Glow */}
-      <div className="absolute w-40 h-40 rounded-full bg-emerald-500/5 blur-3xl -z-10 pointer-events-none" />
+      <div className="absolute w-36 h-36 rounded-full bg-emerald-500/5 blur-3xl -z-10 pointer-events-none" />
 
-      {/* Circular Progress Ring */}
-      <div className="relative w-52 h-52 flex items-center justify-center">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+      {/* Responsive Circular Progress Ring */}
+      <div className="relative w-44 sm:w-52 h-44 sm:h-52 flex items-center justify-center">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 180 180">
           <defs>
             <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#10B981" />
@@ -30,8 +30,8 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
 
           {/* Track */}
           <circle
-            cx="100"
-            cy="100"
+            cx="90"
+            cy="90"
             r={radius}
             stroke="rgba(30, 41, 59, 0.5)"
             strokeWidth={strokeWidth}
@@ -40,8 +40,8 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
 
           {/* Smooth Filled Ring */}
           <motion.circle
-            cx="100"
-            cy="100"
+            cx="90"
+            cy="90"
             r={radius}
             stroke="url(#emeraldGradient)"
             strokeWidth={strokeWidth}
@@ -55,39 +55,39 @@ export default function CircularProgress({ consumed = 0, target = 2000, bmr = 17
         </svg>
 
         {/* Center Calorie Counter */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
           <div className="flex items-center space-x-1 space-x-reverse text-emerald-400 mb-0.5 font-medium">
-            <Flame className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-semibold">קלוריות שנצרכו</span>
+            <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+            <span className="text-[10px] sm:text-xs font-semibold">קלוריות שנצרכו</span>
           </div>
 
           <motion.span
             key={consumed}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="text-3xl sm:text-4xl font-black tracking-tight text-white"
+            className="text-2xl sm:text-4xl font-black tracking-tight text-white"
           >
             {consumed.toLocaleString()}
           </motion.span>
 
-          <div className="text-xs text-slate-400 font-medium mt-0.5">
+          <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">
             מתוך <span className="text-slate-200 font-bold">{target.toLocaleString()}</span> קל'
           </div>
         </div>
       </div>
 
       {/* Target Status Bar */}
-      <div className="mt-4 w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800">
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs text-slate-400 font-medium">סטטוס יעד:</span>
+      <div className="mt-3 sm:mt-4 w-full flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div className="flex items-center gap-1.5">
+          <Zap className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="text-[11px] sm:text-xs text-slate-400 font-medium">סטטוס יעד:</span>
         </div>
         <span
-          className={`text-xs font-bold ${
+          className={`text-[11px] sm:text-xs font-bold truncate max-w-[170px] ${
             isOverTarget ? 'text-rose-400' : 'text-emerald-400'
           }`}
         >
-          {isOverTarget ? `חריגה של ${Math.abs(remaining)} קלוריות` : `נשארו עוד ${remaining} קלוריות ליעד`}
+          {isOverTarget ? `חריגה של ${Math.abs(remaining)} קל'` : `נשארו עוד ${remaining} קל'`}
         </span>
       </div>
     </div>
