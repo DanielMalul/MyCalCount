@@ -7,12 +7,14 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  onAuthStateChanged,
   updateProfile,
   signInWithPopup,
   googleProvider,
   db,
   doc,
-  setDoc
+  setDoc,
+  getDoc
 } from '../config/firebase';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -43,13 +45,65 @@ export const useFitnessStore = create(
       // Selected Date Filter
       selectedDate: getTodayString(),
 
-      // Daily Logs - Strictly Zero Defaults (No Mock Data)
+      // Daily Logs
       loggedMeals: [],
       waterMl: 0,
       steps: 0,
       stepTarget: 10000,
 
-      // Auth Actions
+      // Initialize Firebase Auth Listener & Fetch User Cloud Data
+      initAuthListener: () => {
+        if (!isFirebaseConfigured || !auth) return;
+
+        onAuthStateChanged(auth, async (firebaseUser) => {
+          if (firebaseUser) {
+            const userData = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+              photoURL: firebaseUser.photoURL
+            };
+            set({ user: userData });
+
+            // Fetch profile data from Firestore
+            if (db) {
+              try {
+                const userDocRef = doc(db, 'users', firebaseUser.uid);
+                const userSnap = await getDoc(userDocRef);
+
+                if (userSnap.exists()) {
+                  const cloudData = userSnap.data();
+                  if (cloudData.profile) {
+                    const newTargets = calculateTargets(cloudData.profile);
+                    set({
+                      userProfile: cloudData.profile,
+                      dailyTargets: newTargets,
+                      onboardingCompleted: true
+                    });
+                  }
+                }
+
+                // Fetch today's meals from Firestore
+                const todayStr = get().selectedDate || getTodayString();
+                const logDocRef = doc(db, 'users', firebaseUser.uid, 'dailyLogs', todayStr);
+                const logSnap = await getDoc(logDocRef);
+
+                if (logSnap.exists()) {
+                  const logData = logSnap.data();
+                  if (logData.meals && Array.isArray(logData.meals)) {
+                    set({ loggedMeals: logData.meals });
+                  }
+                }
+              } catch (err) {
+                console.error('Firestore cloud data fetch error:', err);
+              }
+            }
+          } else {
+            set({ user: null });
+          }
+        });
+      },
+
       setUser: (user) => set({ user }),
 
       registerWithEmail: async (name, email, password) => {
@@ -71,6 +125,13 @@ export const useFitnessStore = create(
             displayName: name || res.user.email.split('@')[0]
           };
           set({ user: userData, isAuthLoading: false });
+
+          // Save initial profile to Firestore
+          const currentProfile = get().userProfile;
+          if (db) {
+            await setDoc(doc(db, 'users', res.user.uid), { profile: currentProfile }, { merge: true });
+          }
+
           return userData;
         } catch (err) {
           set({ isAuthLoading: false });
@@ -94,6 +155,32 @@ export const useFitnessStore = create(
             displayName: res.user.displayName || res.user.email.split('@')[0]
           };
           set({ user: userData, isAuthLoading: false });
+
+          // Pull user profile and meals from Firestore
+          if (db) {
+            const userSnap = await getDoc(doc(db, 'users', res.user.uid));
+            if (userSnap.exists()) {
+              const cloudData = userSnap.data();
+              if (cloudData.profile) {
+                const newTargets = calculateTargets(cloudData.profile);
+                set({
+                  userProfile: cloudData.profile,
+                  dailyTargets: newTargets,
+                  onboardingCompleted: true
+                });
+              }
+            }
+
+            const todayStr = get().selectedDate || getTodayString();
+            const logSnap = await getDoc(doc(db, 'users', res.user.uid, 'dailyLogs', todayStr));
+            if (logSnap.exists()) {
+              const logData = logSnap.data();
+              if (logData.meals && Array.isArray(logData.meals)) {
+                set({ loggedMeals: logData.meals });
+              }
+            }
+          }
+
           return userData;
         } catch (err) {
           set({ isAuthLoading: false });
@@ -118,6 +205,23 @@ export const useFitnessStore = create(
             photoURL: res.user.photoURL
           };
           set({ user: userData, isAuthLoading: false });
+
+          // Fetch cloud profile
+          if (db) {
+            const userSnap = await getDoc(doc(db, 'users', res.user.uid));
+            if (userSnap.exists()) {
+              const cloudData = userSnap.data();
+              if (cloudData.profile) {
+                const newTargets = calculateTargets(cloudData.profile);
+                set({
+                  userProfile: cloudData.profile,
+                  dailyTargets: newTargets,
+                  onboardingCompleted: true
+                });
+              }
+            }
+          }
+
           return userData;
         } catch (err) {
           set({ isAuthLoading: false });
@@ -129,7 +233,7 @@ export const useFitnessStore = create(
         if (isFirebaseConfigured && auth) {
           await signOut(auth);
         }
-        set({ user: null, loggedMeals: [], waterMl: 0, steps: 0 });
+        set({ user: null, loggedMeals: [], waterMl: 0, steps: 0, onboardingCompleted: false });
       },
 
       // Profile Actions
@@ -160,6 +264,15 @@ export const useFitnessStore = create(
           dailyTargets: newTargets,
           onboardingCompleted: true
         });
+
+        const user = get().user;
+        if (isFirebaseConfigured && db && user?.uid) {
+          try {
+            setDoc(doc(db, 'users', user.uid), { profile: profileData }, { merge: true });
+          } catch (e) {
+            console.error('Firestore onboarding sync error:', e);
+          }
+        }
       },
 
       setSelectedDate: (dateStr) => set({ selectedDate: dateStr }),
@@ -231,9 +344,6 @@ export const useFitnessStore = create(
       setSteps: (count) => set({ steps: Math.max(0, count) }),
       setStepTarget: (target) => set({ stepTarget: target }),
 
-      // Reset mock data helper
-      resetAllData: () => set({ waterMl: 0, steps: 0, loggedMeals: [] }),
-
       // Metrics Calculators for Selected Date
       getDailyTotals: () => {
         const state = get();
@@ -253,7 +363,7 @@ export const useFitnessStore = create(
       }
     }),
     {
-      name: 'mycalcount-fitness-storage-v2' // Bumped storage name to wipe old cached 4134 steps & 1250ml water
+      name: 'mycalcount-fitness-storage-v2'
     }
   )
 );
