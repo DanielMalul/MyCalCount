@@ -12,15 +12,14 @@ import {
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCqFwU77GwLktAudCPWtZebSz6zsDxTmzM',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'mycalcalc-42d7d.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mycalcalc-42d7d',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'mycalcalc-42d7d.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '57059935923',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:57059935923:web:8f1249fd6848a5b1d752c6'
 };
 
-// Check if valid Firebase credentials are setup
 export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.apiKey !== '' && firebaseConfig.projectId
 );
