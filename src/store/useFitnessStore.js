@@ -18,11 +18,11 @@ import {
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
 const defaultProfile = {
-  age: 26,
+  age: 25,
   gender: 'male',
-  heightCm: 178,
-  currentWeightKg: 78,
-  targetWeightKg: 72,
+  heightCm: 175,
+  currentWeightKg: 70,
+  targetWeightKg: 65,
   goal: 'cut',
   activityLevel: 'moderate'
 };
@@ -38,15 +38,15 @@ export const useFitnessStore = create(
       onboardingCompleted: false,
       userProfile: defaultProfile,
       dailyTargets: calculateTargets(defaultProfile),
-      geminiApiKey: '',
+      geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
 
       // Selected Date Filter
       selectedDate: getTodayString(),
 
-      // Daily Logs
+      // Daily Logs - Starts Completely Clean (No fake data)
       loggedMeals: [],
-      waterMl: 1250,
-      steps: 4120,
+      waterMl: 0,
+      steps: 0,
       stepTarget: 10000,
 
       // Auth Actions
@@ -55,7 +55,6 @@ export const useFitnessStore = create(
       registerWithEmail: async (name, email, password) => {
         set({ isAuthLoading: true });
         if (!isFirebaseConfigured || !auth) {
-          // Local fallback registration
           const mockUser = { uid: 'user_' + Date.now(), email, displayName: name };
           set({ user: mockUser, isAuthLoading: false });
           return mockUser;
@@ -82,7 +81,6 @@ export const useFitnessStore = create(
       loginWithEmail: async (email, password) => {
         set({ isAuthLoading: true });
         if (!isFirebaseConfigured || !auth) {
-          // Local fallback login
           const mockUser = { uid: 'user_local', email, displayName: email.split('@')[0] };
           set({ user: mockUser, isAuthLoading: false });
           return mockUser;
@@ -131,7 +129,7 @@ export const useFitnessStore = create(
         if (isFirebaseConfigured && auth) {
           await signOut(auth);
         }
-        set({ user: null });
+        set({ user: null, loggedMeals: [], waterMl: 0, steps: 0 });
       },
 
       // Profile Actions
@@ -145,7 +143,6 @@ export const useFitnessStore = create(
           dailyTargets: newTargets
         });
 
-        // Sync to Firestore if user logged in
         const user = get().user;
         if (isFirebaseConfigured && db && user?.uid) {
           try {
@@ -186,7 +183,6 @@ export const useFitnessStore = create(
         const updatedMeals = [newMeal, ...get().loggedMeals];
         set({ loggedMeals: updatedMeals });
 
-        // Sync to Firestore if user logged in
         const user = get().user;
         if (isFirebaseConfigured && db && user?.uid) {
           try {

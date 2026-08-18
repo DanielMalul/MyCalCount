@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Key, ExternalLink, X, Check, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, Key, ExternalLink, X, Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
 export default function ApiKeyModal({ isOpen, onClose }) {
   const geminiApiKey = useFitnessStore((state) => state.geminiApiKey);
   const setGeminiApiKey = useFitnessStore((state) => state.setGeminiApiKey);
 
-  const [inputKey, setInputKey] = useState(geminiApiKey || '');
+  const [inputKey, setInputKey] = useState(geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [showKey, setShowKey] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -37,7 +37,7 @@ export default function ApiKeyModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100">Gemini Vision API Key</h2>
-              <p className="text-xs text-slate-400">Configure AI Meal Analysis Engine</p>
+              <p className="text-xs text-slate-400">AI Meal Analysis Engine</p>
             </div>
           </div>
           <button
@@ -48,11 +48,22 @@ export default function ApiKeyModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        <div className="space-y-4">
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Enter your Google Gemini API key to enable instant meal vision analysis. If left empty, the app runs on a realistic simulation engine.
+        {/* Active Key Status Card */}
+        {inputKey ? (
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-4 flex items-center space-x-2.5 text-xs text-emerald-300">
+            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div>
+              <p className="font-bold">Gemini AI Active & Configured</p>
+              <p className="text-[11px] text-emerald-400/80">Your API key is active. Food scanning works automatically!</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-300 leading-relaxed mb-4">
+            Enter your Google Gemini API key to enable instant meal vision analysis.
           </p>
+        )}
 
+        <div className="space-y-4">
           <div className="relative">
             <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1">
               <Key className="w-3.5 h-3.5 text-cyan-400" /> API Key
@@ -89,13 +100,13 @@ export default function ApiKeyModal({ isOpen, onClose }) {
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:bg-slate-800"
             >
-              Cancel
+              Close
             </button>
             <button
               onClick={handleSave}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-600 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 hover:scale-105 transition-transform flex items-center gap-1.5"
             >
-              {savedSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : 'Save API Key'}
+              {savedSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : 'Save Key'}
             </button>
           </div>
         </div>
