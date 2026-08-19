@@ -85,6 +85,64 @@ const setupRealtimeListeners = (uid, dateStr, set) => {
   }
 };
 
+// Helper to compress heavy camera base64 photos to tiny JPEG thumbnails (< 10KB) to satisfy Firestore 1MB quota
+const createLightweightThumbnail = (dataUrl) => {
+  return new Promise((resolve) => {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) {
+      resolve(null);
+      return;
+    }
+    if (dataUrl.length < 25000) {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const maxDim = 120;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          }
+        } else {
+          if (h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.5));
+      } catch (err) {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+};
+
+const sanitizeMealsForCloud = async (meals) => {
+  return Promise.all(
+    meals.map(async (m) => {
+      let img = m.image;
+      if (img && typeof img === 'string' && img.length > 25000) {
+        img = await createLightweightThumbnail(img);
+      }
+      return {
+        ...m,
+        image: img
+      };
+    })
+  );
+};
+
 export const useFitnessStore = create(
   persist(
     (set, get) => ({
@@ -292,7 +350,7 @@ export const useFitnessStore = create(
       },
 
       // Meal Management
-      addMeal: (meal) => {
+      addMeal: async (meal) => {
         const dateStr = get().selectedDate || getTodayString();
         const newMeal = {
           id: 'meal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
@@ -313,14 +371,15 @@ export const useFitnessStore = create(
         const user = get().user;
         if (isFirebaseConfigured && db && user?.uid) {
           try {
-            setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: updatedMeals }, { merge: true });
+            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
             console.error('Firestore meal sync error:', e);
           }
         }
       },
 
-      updateMeal: (id, updatedFields) => {
+      updateMeal: async (id, updatedFields) => {
         const updatedMeals = get().loggedMeals.map((m) => (m.id === id ? { ...m, ...updatedFields } : m));
         set({ loggedMeals: updatedMeals });
 
@@ -328,14 +387,15 @@ export const useFitnessStore = create(
         const dateStr = get().selectedDate;
         if (isFirebaseConfigured && db && user?.uid) {
           try {
-            setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: updatedMeals }, { merge: true });
+            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
             console.error('Firestore update sync error:', e);
           }
         }
       },
 
-      deleteMeal: (id) => {
+      deleteMeal: async (id) => {
         const updatedMeals = get().loggedMeals.filter((m) => m.id !== id);
         set({ loggedMeals: updatedMeals });
 
@@ -343,12 +403,15 @@ export const useFitnessStore = create(
         const dateStr = get().selectedDate;
         if (isFirebaseConfigured && db && user?.uid) {
           try {
-            setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: updatedMeals }, { merge: true });
+            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
             console.error('Firestore delete sync error:', e);
           }
         }
       },
+
+
 
       // Water & Steps Tracking
       addWater: (amount = 250) => set({ waterMl: Math.max(0, get().waterMl + amount) }),

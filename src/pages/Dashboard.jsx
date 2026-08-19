@@ -10,7 +10,8 @@ import {
   Sparkles,
   TrendingDown,
   TrendingUp,
-  Target
+  Target,
+  AlertTriangle
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import Navbar from '../components/Navbar';
@@ -79,6 +80,24 @@ export default function Dashboard() {
       />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 sm:pt-6 space-y-4 sm:space-y-6">
+        
+        {/* Guest Mode Cloud Sync Warning Banner */}
+        {!user && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex flex-col sm:flex-row items-center justify-between gap-2 shadow-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>אינך מחובר לחשבון. הארוחות נשמרות במכשיר זה בלבד. התחבר לחשבון עם אותו אימייל במחשב ובטלפון כדי לסנכרן בלייב!</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAuthOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold text-xs shrink-0 border border-amber-500/30 transition-colors"
+            >
+              התחברות לחשבון
+            </button>
+          </div>
+        )}
+
         
         {/* User Target & Metric Banner */}
         <section className="glass-panel p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-800/60 shadow-xl space-y-3">
