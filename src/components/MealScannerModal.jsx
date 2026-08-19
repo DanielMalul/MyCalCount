@@ -119,26 +119,37 @@ export default function MealScannerModal({ isOpen, onClose }) {
     onClose();
   };
 
-  const handleSaveManualMeal = (e) => {
+  const handleSaveManualMeal = async (e) => {
     e.preventDefault();
     if (!manualForm.food_name.trim()) {
       setErrorMsg('אנא הכנס שם ארוחה.');
       return;
     }
+    const requestedWeight = Number(manualForm.weight_grams) > 0 ? Number(manualForm.weight_grams) : 100;
+    setIsAiCalculatingManual(true);
+    setErrorMsg('');
 
-    addMeal({
-      food_name: manualForm.food_name,
-      weight_grams: Number(manualForm.weight_grams) || 100,
-      total_calories: Number(manualForm.total_calories) || 0,
-      protein_g: Number(manualForm.protein_g) || 0,
-      carbs_g: Number(manualForm.carbs_g) || 0,
-      fats_g: Number(manualForm.fats_g) || 0,
-      explanation: manualForm.explanation || 'הזנה ידנית',
-      image: null
-    });
-
-    handleReset();
-    onClose();
+    try {
+      const res = await analyzeMealText(manualForm.food_name, requestedWeight);
+      addMeal({
+        food_name: res.food_name || manualForm.food_name,
+        weight_grams: requestedWeight,
+        total_calories: res.total_calories || 0,
+        protein_g: res.protein_g || 0,
+        carbs_g: res.carbs_g || 0,
+        fats_g: res.fats_g || 0,
+        explanation: res.explanation || `ניתוח AI: ${requestedWeight} גרם`,
+        image: null
+      });
+      speakIdentification(res);
+      handleReset();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.message || 'חישוב ה-AI נכשל. אנא וודא חיבור לרשת.');
+    } finally {
+      setIsAiCalculatingManual(false);
+    }
   };
 
   const handleReset = () => {
@@ -173,11 +184,11 @@ export default function MealScannerModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2 space-x-reverse">
             <div className="p-2 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 shadow-md">
-              {activeTab === 'ai' ? <Camera className="w-5 h-5 text-white" /> : <Edit3 className="w-5 h-5 text-white" />}
+              {activeTab === 'ai' ? <Camera className="w-5 h-5 text-white" /> : <Scale className="w-5 h-5 text-white" />}
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-100">הוספת ארוחה לתפריט</h2>
-              <p className="text-xs text-slate-400">סריקה מצולמת עם Gemini Vision AI או הזנה ידנית</p>
+              <p className="text-xs text-slate-400">סריקה מצולמת או הזנת גרמים בחישוב Gemini AI</p>
             </div>
           </div>
           <button
@@ -218,7 +229,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Edit3 className="w-3.5 h-3.5" /> הזנת גרמים ידנית
+            <Scale className="w-3.5 h-3.5" /> הזנת גרמים (חישוב AI)
           </button>
         </div>
 
@@ -427,130 +438,63 @@ export default function MealScannerModal({ isOpen, onClose }) {
         )}
 
         {activeTab === 'manual' && (
-          <form onSubmit={handleSaveManualMeal} className="space-y-4">
+          <form onSubmit={handleSaveManualMeal} className="space-y-5">
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">שם הארוחה / המשקה</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="למשל: נס קפה עם חלב / חזה עוף ואורז"
-                  value={manualForm.food_name}
-                  onChange={(e) => setManualForm({ ...manualForm, food_name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl glass-input text-xs font-bold"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={handleAiCalculateManual}
-                  disabled={isAiCalculatingManual}
-                  className="px-3.5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold shadow-md hover:opacity-95 transition-all flex items-center gap-1.5 shrink-0"
-                  title="חשב ערכים אוטומטית לפי השם והגרמים בעזרת Gemini AI"
-                >
-                  {isAiCalculatingManual ? (
-                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 text-emerald-300 animate-pulse" /> חישוב AI
-                    </>
-                  )}
-                </button>
-              </div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                שם המאכל או המשקה
+              </label>
+              <input
+                type="text"
+                placeholder="למשל: נס קפה עם חלב / חזה עוף בגריל / סלט ירקות"
+                value={manualForm.food_name}
+                onChange={(e) => setManualForm({ ...manualForm, food_name: e.target.value })}
+                className="w-full px-4 py-3.5 rounded-2xl glass-input text-xs font-bold focus:border-emerald-400"
+                required
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Scale className="w-3.5 h-3.5 text-emerald-400" /> משקל המנה (גרם / מ"ל)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5000"
-                  placeholder="למשל: 200"
-                  value={manualForm.weight_grams}
-                  onChange={(e) => setManualForm({ ...manualForm, weight_grams: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-emerald-300"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Flame className="w-3.5 h-3.5 text-emerald-400" /> סה"כ קלוריות (קל')
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10000"
-                  placeholder="למשל: 45"
-                  value={manualForm.total_calories}
-                  onChange={(e) => setManualForm({ ...manualForm, total_calories: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-emerald-300"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-800/80">
-              <label className="block text-xs font-semibold text-slate-400 mb-2">פירוט אבות המזון (גרמים)</label>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <label className="block text-[10px] font-bold text-indigo-400 mb-1 flex items-center gap-1">
-                    <Dumbbell className="w-3 h-3" /> חלבון (ג')
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="500"
-                    placeholder="0"
-                    value={manualForm.protein_g}
-                    onChange={(e) => setManualForm({ ...manualForm, protein_g: e.target.value })}
-                    className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-indigo-300 border border-indigo-500/20"
-                  />
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <label className="block text-[10px] font-bold text-amber-400 mb-1 flex items-center gap-1">
-                    <Wheat className="w-3 h-3" /> פחמימות (ג')
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="1000"
-                    placeholder="0"
-                    value={manualForm.carbs_g}
-                    onChange={(e) => setManualForm({ ...manualForm, carbs_g: e.target.value })}
-                    className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-amber-300 border border-amber-500/20"
-                  />
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <label className="block text-[10px] font-bold text-rose-400 mb-1 flex items-center gap-1">
-                    <PieChart className="w-3 h-3" /> שומנים (ג')
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="500"
-                    placeholder="0"
-                    value={manualForm.fats_g}
-                    onChange={(e) => setManualForm({ ...manualForm, fats_g: e.target.value })}
-                    className="w-full text-center py-1.5 rounded-lg bg-slate-800/80 text-xs font-black text-rose-300 border border-rose-500/20"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-emerald-400" /> משקל המנה בגרמים / מ"ל
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="5000"
+                placeholder="למשל: 200"
+                value={manualForm.weight_grams}
+                onChange={(e) => setManualForm({ ...manualForm, weight_grams: e.target.value })}
+                className="w-full px-4 py-3.5 rounded-2xl glass-input text-xs font-bold text-emerald-300 focus:border-emerald-400"
+                required
+              />
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                💡 הקלוריות, החלבונים, הפחמימות והשומנים יחושבו אוטומטית ע"י Gemini AI לפי סוג המאכל והמשקל בגרמים.
+              </p>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2 mt-4"
+              disabled={isAiCalculatingManual}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
             >
-              <PlusCircle className="w-4 h-4" /> הוסף ארוחה לתפריט
+              {isAiCalculatingManual ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  <span>Gemini AI מחשב קלוריות ואבות מזון...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4 text-emerald-200 animate-pulse" />
+                  <span>חשב והוסף ארוחה לתפריט</span>
+                </>
+              )}
             </button>
           </form>
         )}
@@ -558,4 +502,5 @@ export default function MealScannerModal({ isOpen, onClose }) {
     </div>
   );
 }
+
 
