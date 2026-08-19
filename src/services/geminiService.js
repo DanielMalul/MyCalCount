@@ -36,6 +36,40 @@ Return your response strictly adhering to this JSON schema:
   "explanation": string (Comprehensive Hebrew summary of analysis, visual cues, and breakdown)
 }`;
 
+const TEXT_NUTRITIONIST_PROMPT = `You are an elite clinical dietitian and advanced nutritional data parser. Your objective is to process a user's manual text entry of food items and quantities, and calculate the exact macronutrient breakdown based on the official USDA National Nutrient Database.
+
+Execute this protocol:
+1. TEXT PARSING: Extract every listed food item and its associated quantity, weight, or volume from the user's input.
+2. WEIGHT STANDARDIZATION: If quantities are provided in volumes (e.g., cups, tablespoons) or abstract units (e.g., "one medium apple", "a slice of bread"), convert them mathematically to exact weight in grams (g) using standard USDA density/weight conversions. If grams are provided, use them directly.
+3. MACRONUTRIENT SYNTHESIS: Cross-reference the exact mass in grams against the USDA database. Compute exact Calories (kcal), Protein (g), Carbohydrates (g), and Fat (g) for each ingredient.
+4. NON-FOOD HANDLING: If the text does not describe edible food or drink, set "is_food": false and output zero values with an explanation in Hebrew.
+
+CRITICAL OUTPUT CONSTRAINTS:
+- Output MUST be strictly valid JSON.
+- NO conversational filler, NO markdown formatting outside the JSON, NO reasoning text outside the JSON object.
+- All string descriptions inside the JSON MUST be in HEBREW.
+
+Return your response strictly adhering to this JSON schema:
+{
+  "is_food": boolean,
+  "food_name": string (Hebrew title summarizing the meal),
+  "analysis_confidence": number (0.0 to 100.0),
+  "total_calories": number,
+  "protein_g": number,
+  "carbs_g": number,
+  "fats_g": number,
+  "weight_grams": number,
+  "ingredients": [
+    {
+      "name": string (Hebrew name of ingredient),
+      "detection_reasoning": string (Brief Hebrew explanation of weight calculation/extraction),
+      "weight_grams": number,
+      "calories": number
+    }
+  ],
+  "explanation": string (Comprehensive Hebrew summary of parsed entry and final breakdown)
+}`;
+
 /**
  * Converts a Data URL or HTTP Image URL into Base64 data & mimeType
  */
@@ -188,7 +222,7 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
-        systemInstruction: SYSTEM_NUTRITIONIST_PROMPT,
+        systemInstruction: TEXT_NUTRITIONIST_PROMPT,
         generationConfig: {
           temperature: 0.0,
           topP: 0.1,
@@ -196,21 +230,40 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
           responseMimeType: 'application/json'
         }
       });
-      const prompt = `Analyze "${foodName}" for EXACTLY ${requestedWeight} grams or ml. Identify the item and calculate exact USDA nutrients. Ensure weight_grams equals ${requestedWeight}.`;
+      const prompt = `User text entry: "${foodName}" for ${requestedWeight} grams/ml. Parse items and compute exact USDA nutrients for ${requestedWeight} grams/ml. Ensure total weight_grams equals ${requestedWeight}.`;
       const result = await model.generateContent([prompt]);
       const response = await result.response;
       const textOutput = response.text();
 
       const parsedData = cleanAndParseJSON(textOutput);
 
+      const isFood = parsedData.is_food !== false && parsedData.food_name !== 'לא ניתן לזיהוי';
+
+      if (!isFood) {
+        return {
+          is_food: false,
+          food_name: 'לא ניתן לזיהוי',
+          total_calories: 0,
+          protein_g: 0,
+          carbs_g: 0,
+          fats_g: 0,
+          weight_grams: 0,
+          explanation: parsedData.explanation || 'הטקסט שהוזן אינו מתאר מאכל או משקה מוכר. נא להזין שם מאכל תקין.',
+          isFallback: false
+        };
+      }
+
       return {
+        is_food: true,
         food_name: parsedData.food_name || foodName,
+        analysis_confidence: Number(parsedData.analysis_confidence) || 100,
         total_calories: Math.max(0, Math.round(Number(parsedData.total_calories) || 0)),
         protein_g: Math.max(0, Math.round(Number(parsedData.protein_g) || 0)),
         carbs_g: Math.max(0, Math.round(Number(parsedData.carbs_g) || 0)),
         fats_g: Math.max(0, Math.round(Number(parsedData.fats_g) || 0)),
         weight_grams: requestedWeight,
-        explanation: parsedData.explanation || `זיהוי: ${parsedData.food_name || foodName} (חישוב מדויק ל-${requestedWeight} גרם).`,
+        ingredients: Array.isArray(parsedData.ingredients) ? parsedData.ingredients : [],
+        explanation: parsedData.explanation || `זיהוי: ${parsedData.food_name || foodName} (${requestedWeight} גרם).`,
         isFallback: false
       };
     } catch (err) {
@@ -221,6 +274,7 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
 
   throw lastError || new Error('שגיאה בחיבור לשרתי Gemini AI');
 }
+
 
 
 
