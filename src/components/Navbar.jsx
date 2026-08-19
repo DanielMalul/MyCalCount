@@ -1,8 +1,8 @@
 import React from 'react';
-import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn, Key, Sparkles } from 'lucide-react';
+import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function Navbar({ onOpenProfileModal, onOpenAuthModal, onOpenApiKeyModal }) {
+export default function Navbar({ onOpenProfileModal, onOpenAuthModal }) {
   const selectedDate = useFitnessStore((state) => state.selectedDate);
   const setSelectedDate = useFitnessStore((state) => state.setSelectedDate);
   const user = useFitnessStore((state) => state.user);
@@ -84,14 +84,6 @@ export default function Navbar({ onOpenProfileModal, onOpenAuthModal, onOpenApiK
 
         {/* User Auth & Profile Actions */}
         <div className="flex items-center space-x-1 sm:space-x-2 space-x-reverse shrink-0">
-          <button
-            onClick={onOpenApiKeyModal}
-            className="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 text-emerald-400 hover:text-emerald-300 transition-colors"
-            title="הגדרות Gemini API Key"
-          >
-            <Sparkles className="w-4 h-4" />
-          </button>
-
           {user ? (
             <div className="flex items-center space-x-1 space-x-reverse">
               <button

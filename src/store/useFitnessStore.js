@@ -154,7 +154,6 @@ export const useFitnessStore = create(
       onboardingCompleted: false,
       userProfile: defaultProfile,
       dailyTargets: calculateTargets(defaultProfile),
-      geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
 
       // Selected Date Filter & Auto Day Sync
       selectedDate: getTodayString(),
@@ -303,8 +302,6 @@ export const useFitnessStore = create(
       },
 
       // Profile Actions
-      setGeminiApiKey: (key) => set({ geminiApiKey: key }),
-
       updateProfile: (profileUpdates) => {
         const updatedProfile = { ...get().userProfile, ...profileUpdates };
         const newTargets = calculateTargets(updatedProfile);

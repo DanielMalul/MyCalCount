@@ -1,12 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, Sparkles, X, Check, RefreshCw, AlertCircle, Edit3, PlusCircle, Scale, Flame, Dumbbell, Wheat, PieChart, Wand2, Volume2, Key, AlertTriangle, XCircle } from 'lucide-react';
+import { Camera, Upload, Sparkles, X, Check, RefreshCw, AlertCircle, Edit3, PlusCircle, Scale, Flame, Dumbbell, Wheat, PieChart, Wand2, Volume2, XCircle } from 'lucide-react';
 import { analyzeMealImage, analyzeMealText } from '../services/geminiService';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function MealScannerModal({ isOpen, onClose, onOpenApiKeyModal }) {
+export default function MealScannerModal({ isOpen, onClose }) {
   const addMeal = useFitnessStore((state) => state.addMeal);
-  const geminiApiKey = useFitnessStore((state) => state.geminiApiKey);
 
   const [activeTab, setActiveTab] = useState('ai');
 
@@ -69,7 +68,7 @@ export default function MealScannerModal({ isOpen, onClose, onOpenApiKeyModal })
     setIsAnalyzing(true);
     setErrorMsg('');
     try {
-      const result = await analyzeMealImage(imageDataUrl, geminiApiKey);
+      const result = await analyzeMealImage(imageDataUrl);
       setAnalysisResult(result);
       speakIdentification(result);
     } catch (err) {
@@ -90,7 +89,7 @@ export default function MealScannerModal({ isOpen, onClose, onOpenApiKeyModal })
     setErrorMsg('');
 
     try {
-      const res = await analyzeMealText(manualForm.food_name, requestedWeight, geminiApiKey);
+      const res = await analyzeMealText(manualForm.food_name, requestedWeight);
       setManualForm({
         ...manualForm,
         food_name: res.food_name,
@@ -300,41 +299,11 @@ export default function MealScannerModal({ isOpen, onClose, onOpenApiKeyModal })
                       </div>
                     ) : (
                       <>
-                        {/* Fallback Key Warning Banner */}
-                        {analysisResult.isFallback && (
-                          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold flex items-center gap-1.5">
-                                <AlertTriangle className="w-4 h-4 text-amber-400" /> זיהוי משוער (AI מוגבל)
-                              </span>
-                              {onOpenApiKeyModal && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    onClose();
-                                    onOpenApiKeyModal();
-                                  }}
-                                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-bold flex items-center gap-1 transition-colors"
-                                >
-                                  <Key className="w-3.5 h-3.5" /> עדכן מפתח API
-                                </button>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-amber-300/80 leading-relaxed">
-                              {analysisResult.fallbackReason || 'מפתח ה-API אינו תקין. לקבלת זיהוי visual מדויק יש להגדיר מפתח Gemini API תקין.'}
-                            </p>
-                          </div>
-                        )}
-
                         {/* Result Header & Audio Voice Trigger */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className={`p-1 rounded-lg text-xs font-bold px-2.5 py-0.5 ${
-                              analysisResult.isFallback
-                                ? 'bg-amber-500/20 text-amber-400'
-                                : 'bg-emerald-500/20 text-emerald-400'
-                            }`}>
-                              {analysisResult.isFallback ? 'חישוב משוער' : '🎯 מאומת Gemini Vision AI'}
+                            <span className="p-1 rounded-lg text-xs font-bold px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400">
+                              🎯 מאומת Gemini Vision AI
                             </span>
                             <span className="text-xs text-slate-400 font-semibold">כ-{analysisResult.weight_grams} גרם/מ"ל</span>
                           </div>

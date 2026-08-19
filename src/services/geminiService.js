@@ -91,13 +91,11 @@ function cleanAndParseJSON(text) {
   }
 }
 
-export async function analyzeMealImage(dataUrl, customApiKey = '') {
-  const apiKey = customApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+export async function analyzeMealImage(dataUrl) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
-  const isKeyValid = apiKey && apiKey.trim() !== '' && !apiKey.startsWith('AQ.');
-
-  if (!isKeyValid) {
-    throw new Error('מפתח Gemini API חסר או לא תקין. נא להתחבר או להזין מפתח תקין בהגדרות ה-AI.');
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('מפתח Gemini API חסר בקוד. נא להגדיר VITE_GEMINI_API_KEY בקובץ ה-env.');
   }
 
   const { base64Data, mimeType } = await getBase64FromUrlOrDataUrl(dataUrl);
@@ -173,14 +171,12 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
 /**
  * Text-Based Universal AI Meal Analysis
  */
-export async function analyzeMealText(foodName, weightGrams = 100, customApiKey = '') {
-  const apiKey = customApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+export async function analyzeMealText(foodName, weightGrams = 100) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   const requestedWeight = Number(weightGrams) > 0 ? Number(weightGrams) : 100;
 
-  const isKeyValid = apiKey && apiKey.trim() !== '' && !apiKey.startsWith('AQ.');
-
-  if (!isKeyValid) {
-    throw new Error('מפתח Gemini API חסר או לא תקין. נא להגדיר מפתח תקין בהגדרות AI.');
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('מפתח Gemini API חסר בקוד. נא להגדיר VITE_GEMINI_API_KEY בקובץ ה-env.');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -225,6 +221,7 @@ export async function analyzeMealText(foodName, weightGrams = 100, customApiKey 
 
   throw lastError || new Error('שגיאה בחיבור לשרתי Gemini AI');
 }
+
 
 
 
