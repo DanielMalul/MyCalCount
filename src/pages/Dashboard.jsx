@@ -16,7 +16,8 @@ import {
   Check,
   RotateCcw,
   ChefHat,
-  Wand2
+  Wand2,
+  ChevronLeft
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import Navbar from '../components/Navbar';
@@ -30,6 +31,8 @@ import MealLogItem from '../components/MealLogItem';
 import OnboardingModal from '../components/OnboardingModal';
 import AuthModal from '../components/AuthModal';
 import BottomNav from '../components/BottomNav';
+import MyMealPlanPage from '../components/MyMealPlanPage';
+import MealHistoryPage from '../components/MealHistoryPage';
 
 export default function Dashboard() {
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -40,6 +43,9 @@ export default function Dashboard() {
   const user = useFitnessStore((state) => state.user);
   const getDailyTotals = useFitnessStore((state) => state.getDailyTotals);
   const updateProfile = useFitnessStore((state) => state.updateProfile);
+
+  // Tab Navigation State: 'dashboard' | 'menu' | 'history'
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   // Modal open states
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -98,6 +104,8 @@ export default function Dashboard() {
 
       {/* Header */}
       <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         onOpenProfileModal={() => setIsOnboardingOpen(true)}
         onOpenAuthModal={() => setIsAuthOpen(true)}
       />
@@ -121,220 +129,206 @@ export default function Dashboard() {
           </div>
         )}
 
-        
-        {/* User Target & Metric Banner */}
-        <section className="glass-panel p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-800/60 shadow-xl space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center space-x-3 space-x-reverse min-w-0">
-              <div className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-emerald-400 shrink-0">
-                <GoalIcon className={`w-5 h-5 sm:w-6 sm:h-6 ${currentGoalObj.color}`} />
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">מטרת התזונה</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    {currentGoalObj.label}
-                  </span>
+        {/* TAB 1: MAIN DASHBOARD */}
+        {activeTab === 'dashboard' && (
+          <>
+            {/* User Target & Metric Banner */}
+            <section className="glass-panel p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-800/60 shadow-xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-3 space-x-reverse min-w-0">
+                  <div className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-emerald-400 shrink-0">
+                    <GoalIcon className={`w-5 h-5 sm:w-6 sm:h-6 ${currentGoalObj.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">מטרת התזונה</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {currentGoalObj.label}
+                      </span>
+                    </div>
+                    <p className="text-sm sm:text-base font-extrabold text-white mt-0.5 truncate">
+                      {userProfile.currentWeightKg} ק"ג <span className="text-slate-400 text-xs font-normal">נוכחי</span> ←{' '}
+                      <span className="text-emerald-400">{userProfile.targetWeightKg} ק"ג</span> <span className="text-slate-400 text-xs font-normal">יעד</span>
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm sm:text-base font-extrabold text-white mt-0.5 truncate">
-                  {userProfile.currentWeightKg} ק"ג <span className="text-slate-400 text-xs font-normal">נוכחי</span> ←{' '}
-                  <span className="text-emerald-400">{userProfile.targetWeightKg} ק"ג</span> <span className="text-slate-400 text-xs font-normal">יעד</span>
-                </p>
-              </div>
-            </div>
 
-            {/* BMR / TDEE Grid */}
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-3 text-center bg-slate-900/60 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-slate-800 w-full sm:w-auto">
-              <div className="px-1">
-                <span className="text-slate-400 text-[10px] block">BMR</span>
-                <span className="font-bold text-xs sm:text-sm text-slate-200">{dailyTargets.bmr} קל'</span>
-              </div>
-              <div className="px-1 border-r border-l border-slate-800">
-                <span className="text-slate-400 text-[10px] block">TDEE</span>
-                <span className="font-bold text-xs sm:text-sm text-slate-200">{dailyTargets.tdee} קל'</span>
-              </div>
-              <div className="px-1 relative">
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-slate-400 text-[10px] block">יעד קלוריות</span>
-                  <button
-                    onClick={() => {
-                      setCustomCalInput(userProfile.customTargetCalories || dailyTargets.targetCalories);
-                      setIsEditingTarget(!isEditingTarget);
-                    }}
-                    className="text-slate-400 hover:text-emerald-400 transition-colors p-0.5"
-                    title="ערוך יעד קלוריות ידנית"
-                  >
-                    <Edit3 className="w-3 h-3 text-emerald-400" />
-                  </button>
-                </div>
-                {isEditingTarget ? (
-                  <form onSubmit={handleSaveCustomTarget} className="flex items-center gap-1 mt-0.5 justify-center">
-                    <input
-                      type="number"
-                      min="500"
-                      max="10000"
-                      value={customCalInput}
-                      onChange={(e) => setCustomCalInput(e.target.value)}
-                      className="w-16 px-1 py-0.5 rounded bg-slate-800 text-center font-extrabold text-xs text-emerald-400 border border-emerald-500/50 focus:outline-none"
-                      autoFocus
-                    />
-                    <button
-                      type="submit"
-                      className="p-1 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 text-[10px] font-bold"
-                      title="שמור יעד"
-                    >
-                      <Check className="w-3 h-3" />
-                    </button>
-                    {userProfile.customTargetCalories && (
+                {/* BMR / TDEE Grid */}
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-3 text-center bg-slate-900/60 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-slate-800 w-full sm:w-auto">
+                  <div className="px-1">
+                    <span className="text-slate-400 text-[10px] block">BMR</span>
+                    <span className="font-bold text-xs sm:text-sm text-slate-200">{dailyTargets.bmr} קל'</span>
+                  </div>
+                  <div className="px-1 border-r border-l border-slate-800">
+                    <span className="text-slate-400 text-[10px] block">TDEE</span>
+                    <span className="font-bold text-xs sm:text-sm text-slate-200">{dailyTargets.tdee} קל'</span>
+                  </div>
+                  <div className="px-1 relative">
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-slate-400 text-[10px] block">יעד קלוריות</span>
+                      <button
+                        onClick={() => {
+                          setCustomCalInput(userProfile.customTargetCalories || dailyTargets.targetCalories);
+                          setIsEditingTarget(!isEditingTarget);
+                        }}
+                        className="text-slate-400 hover:text-emerald-400 transition-colors p-0.5"
+                        title="ערוך יעד קלוריות ידנית"
+                      >
+                        <Edit3 className="w-3 h-3 text-emerald-400" />
+                      </button>
+                    </div>
+                    {isEditingTarget ? (
+                      <form onSubmit={handleSaveCustomTarget} className="flex items-center gap-1 mt-0.5 justify-center">
+                        <input
+                          type="number"
+                          min="500"
+                          max="10000"
+                          value={customCalInput}
+                          onChange={(e) => setCustomCalInput(e.target.value)}
+                          className="w-16 px-1 py-0.5 rounded bg-slate-800 text-center font-extrabold text-xs text-emerald-400 border border-emerald-500/50 focus:outline-none"
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          className="p-1 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 text-[10px] font-bold"
+                          title="שמור יעד"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                        {userProfile.customTargetCalories && (
+                          <button
+                            type="button"
+                            onClick={handleResetCustomTarget}
+                            className="p-1 rounded bg-slate-800 text-slate-400 hover:text-rose-400 text-[10px]"
+                            title="חזור לחישוב אוטומטי"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        )}
+                      </form>
+                    ) : (
                       <button
                         type="button"
-                        onClick={handleResetCustomTarget}
-                        className="p-1 rounded bg-slate-800 text-slate-400 hover:text-rose-400 text-[10px]"
-                        title="חזור לחישוב אוטומטי"
+                        onClick={() => {
+                          setCustomCalInput(userProfile.customTargetCalories || dailyTargets.targetCalories);
+                          setIsEditingTarget(true);
+                        }}
+                        className="font-extrabold text-xs sm:text-sm text-emerald-400 hover:underline flex items-center justify-center gap-0.5 mx-auto"
+                        title="לחץ לעריכת יעד קלוריות"
                       >
-                        <RotateCcw className="w-3 h-3" />
+                        <span>{dailyTargets.targetCalories} קל'</span>
+                        {userProfile.customTargetCalories && (
+                          <span className="text-[9px] font-normal text-amber-400" title="יעד הוגדר ידנית">(ידני)</span>
+                        )}
                       </button>
                     )}
-                  </form>
-                ) : (
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Core Progress Grid */}
+            <section className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
+              <div className="md:col-span-5 flex flex-col">
+                <CircularProgress
+                  consumed={dailyTotals.calories}
+                  target={dailyTargets.targetCalories}
+                  bmr={dailyTargets.bmr}
+                  tdee={dailyTargets.tdee}
+                />
+              </div>
+
+              <div className="md:col-span-7 flex flex-col justify-between space-y-3">
+                <MacroProgressBar
+                  label="חלבון"
+                  consumed={dailyTotals.protein}
+                  target={dailyTargets.proteinGrams}
+                  color="purple"
+                  icon={Dumbbell}
+                />
+                <MacroProgressBar
+                  label="פחמימות"
+                  consumed={dailyTotals.carbs}
+                  target={dailyTargets.carbGrams}
+                  color="amber"
+                  icon={Wheat}
+                />
+                <MacroProgressBar
+                  label="שומנים"
+                  consumed={dailyTotals.fats}
+                  target={dailyTargets.fatGrams}
+                  color="pink"
+                  icon={PieChart}
+                />
+              </div>
+            </section>
+
+            {/* AI Scanner & Meal Plan Hero Banner */}
+            <section className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800/80 bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/20 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+                <div className="space-y-1 text-center sm:text-right">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-1">
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות ומחולל תפריטים Gemini AI
+                  </div>
+                  <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה או מחזק תפריט תזונה אישי</h2>
+                  <p className="text-xs text-slate-300 max-w-md">
+                    צלם ארוחה לניתוח קלוריות, או חולל תפריט יומי מותאם אישית לפי יעד הקלוריות והזמן שלך.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
                   <button
-                    type="button"
-                    onClick={() => {
-                      setCustomCalInput(userProfile.customTargetCalories || dailyTargets.targetCalories);
-                      setIsEditingTarget(true);
-                    }}
-                    className="font-extrabold text-xs sm:text-sm text-emerald-400 hover:underline flex items-center justify-center gap-0.5 mx-auto"
-                    title="לחץ לעריכת יעד קלוריות"
+                    onClick={() => setIsMealPlanOpen(true)}
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
                   >
-                    <span>{dailyTargets.targetCalories} קל'</span>
-                    {userProfile.customTargetCalories && (
-                      <span className="text-[9px] font-normal text-amber-400" title="יעד הוגדר ידנית">(ידני)</span>
-                    )}
+                    <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-purple-200" /> מחולל תפריט AI
                   </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Core Progress Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
-          <div className="md:col-span-5 flex flex-col">
-            <CircularProgress
-              consumed={dailyTotals.calories}
-              target={dailyTargets.targetCalories}
-              bmr={dailyTargets.bmr}
-              tdee={dailyTargets.tdee}
-            />
-          </div>
-
-          <div className="md:col-span-7 flex flex-col justify-between space-y-3">
-            <MacroProgressBar
-              label="חלבון"
-              consumed={dailyTotals.protein}
-              target={dailyTargets.proteinGrams}
-              color="purple"
-              icon={Dumbbell}
-            />
-            <MacroProgressBar
-              label="פחמימות"
-              consumed={dailyTotals.carbs}
-              target={dailyTargets.carbGrams}
-              color="amber"
-              icon={Wheat}
-            />
-            <MacroProgressBar
-              label="שומנים"
-              consumed={dailyTotals.fats}
-              target={dailyTargets.fatGrams}
-              color="pink"
-              icon={PieChart}
-            />
-          </div>
-        </section>
-
-        {/* AI Scanner & Meal Plan Hero Banner */}
-        <section className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800/80 bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/20 shadow-xl relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
-            <div className="space-y-1 text-center sm:text-right">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-1">
-                <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות ומחולל תפריטים Gemini AI
-              </div>
-              <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה או מחזק תפריט תזונה אישי</h2>
-              <p className="text-xs text-slate-300 max-w-md">
-                צלם ארוחה לניתוח קלוריות, או חולל תפריט יומי מותאם אישית לפי יעד הקלוריות והזמן שלך.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
-              <button
-                onClick={() => setIsMealPlanOpen(true)}
-                className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
-              >
-                <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-purple-200" /> מחולל תפריט AI
-              </button>
-              <button
-                onClick={() => setIsScannerOpen(true)}
-                className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
-              >
-                <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> סרוק ארוחה
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Widgets Row */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <StepTrackerWidget />
-          <WaterTrackerWidget />
-        </section>
-
-        {/* Meals Logged Timeline Section */}
-        <section className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800/80 shadow-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400">
-                <Flame className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-100">יומן ארוחות להיום</h3>
-                <p className="text-xs text-slate-400">
-                  {filteredMeals.length} ארוחות נרשמו להיום
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsScannerOpen(true)}
-              className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-emerald-400 text-xs font-bold border border-slate-700/80 flex items-center gap-1.5 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> הוסף ארוחה
-            </button>
-          </div>
-
-          {/* Logged Meal Cards List */}
-          <div className="space-y-3">
-            <AnimatePresence mode="popLayout">
-              {filteredMeals.length > 0 ? (
-                filteredMeals.map((meal) => <MealLogItem key={meal.id} meal={meal} />)
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="p-6 sm:p-8 text-center bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 space-y-3"
-                >
-                  <Camera className="w-9 h-9 mx-auto text-slate-600" />
-                  <p className="text-xs sm:text-sm font-semibold text-slate-400">טרם נרשמו ארוחות לתאריך זה</p>
                   <button
                     onClick={() => setIsScannerOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all inline-flex items-center gap-1.5"
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
                   >
-                    <Sparkles className="w-3.5 h-3.5" /> סרוק ארוחה ראשונה
+                    <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> סרוק ארוחה
                   </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </section>
+                </div>
+              </div>
+            </section>
+
+            {/* Widgets Row */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <StepTrackerWidget />
+              <WaterTrackerWidget />
+            </section>
+
+            {/* Quick Teaser Link to Meal History */}
+            <section className="glass-panel p-4 rounded-2xl border border-slate-800/80 shadow-xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-slate-900 text-emerald-400 border border-slate-800">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">ארוחות להיום ({filteredMeals.length})</h3>
+                  <p className="text-xs text-slate-400">צפה ונהל את כל הארוחות ביומן הנפרד</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveTab('history')}
+                className="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/20 transition-all flex items-center gap-1 shrink-0"
+              >
+                <span>לצפייה ביומן המלא</span>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </section>
+          </>
+        )}
+
+        {/* TAB 2: MY MEAL PLAN PRESET LIBRARY */}
+        {activeTab === 'menu' && (
+          <MyMealPlanPage />
+        )}
+
+        {/* TAB 3: MEAL HISTORY LOG */}
+        {activeTab === 'history' && (
+          <MealHistoryPage onOpenScanner={() => setIsScannerOpen(true)} />
+        )}
 
       </main>
 
@@ -351,6 +345,8 @@ export default function Dashboard() {
 
       {/* Native Mobile Bottom Navigation Bar */}
       <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         onOpenScanner={() => setIsScannerOpen(true)}
         onOpenProfile={() => setIsOnboardingOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}

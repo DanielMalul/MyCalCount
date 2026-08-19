@@ -8,7 +8,7 @@ import { estimateTimeToGoal } from '../utils/fitnessMath';
 export default function MealPlanModal({ isOpen, onClose }) {
   const userProfile = useFitnessStore((state) => state.userProfile);
   const dailyTargets = useFitnessStore((state) => state.dailyTargets);
-  const addMeal = useFitnessStore((state) => state.addMeal);
+  const addMealsBatch = useFitnessStore((state) => state.addMealsBatch);
 
   const [diet, setDiet] = useState('כשר / רגיל');
   const [mealCount, setMealCount] = useState(3);
@@ -44,27 +44,27 @@ export default function MealPlanModal({ isOpen, onClose }) {
   };
 
   const handleImportToLog = async () => {
-    if (!generatedPlan || !Array.isArray(generatedPlan.meals)) return;
+    if (!generatedPlan || !Array.isArray(generatedPlan.meals) || generatedPlan.meals.length === 0) return;
 
-    for (const meal of generatedPlan.meals) {
-      await addMeal({
-        food_name: meal.food_name,
-        total_calories: Number(meal.total_calories) || 0,
-        protein_g: Number(meal.protein_g) || 0,
-        carbs_g: Number(meal.carbs_g) || 0,
-        fats_g: Number(meal.fats_g) || 0,
-        weight_grams: Number(meal.weight_grams) || 200,
-        explanation: `${meal.meal_type || 'ארוחה'}: ${meal.explanation || 'תפריט מותאם מ-Gemini AI'}`,
-        image: null
-      });
-    }
+    const formattedMeals = generatedPlan.meals.map((meal) => ({
+      food_name: meal.food_name,
+      total_calories: Number(meal.total_calories) || 0,
+      protein_g: Number(meal.protein_g) || 0,
+      carbs_g: Number(meal.carbs_g) || 0,
+      fats_g: Number(meal.fats_g) || 0,
+      weight_grams: Number(meal.weight_grams) || 200,
+      explanation: `${meal.meal_type || 'ארוחה'}: ${meal.explanation || 'תפריט מותאם מ-Gemini AI'}`,
+      image: null
+    }));
+
+    await addMealsBatch(formattedMeals);
 
     setIsImported(true);
     setTimeout(() => {
       onClose();
       setIsImported(false);
       setGeneratedPlan(null);
-    }, 1500);
+    }, 1200);
   };
 
   return (

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn } from 'lucide-react';
+import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn, Home, ChefHat, BookOpen } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function Navbar({ onOpenProfileModal, onOpenAuthModal }) {
+export default function Navbar({ activeTab = 'dashboard', setActiveTab, onOpenProfileModal, onOpenAuthModal }) {
   const selectedDate = useFitnessStore((state) => state.selectedDate);
   const setSelectedDate = useFitnessStore((state) => state.setSelectedDate);
   const user = useFitnessStore((state) => state.user);
@@ -46,18 +46,57 @@ export default function Navbar({ onOpenProfileModal, onOpenAuthModal }) {
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/60 px-2.5 py-2.5 sm:px-6">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-1.5">
         
-        {/* Brand Logo */}
-        <div className="flex items-center space-x-2 space-x-reverse min-w-0 shrink">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white shrink-0">
-            <Flame className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+        {/* Brand Logo & Desktop Navigation Links */}
+        <div className="flex items-center space-x-3 space-x-reverse min-w-0 shrink">
+          <div
+            onClick={() => setActiveTab && setActiveTab('dashboard')}
+            className="flex items-center space-x-2 space-x-reverse cursor-pointer"
+          >
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white shrink-0">
+              <Flame className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-extrabold text-sm sm:text-lg tracking-tight text-slate-100 truncate">
+                MyCalCount
+              </h1>
+              <p className="text-[10px] text-slate-400 truncate hidden xs:block">
+                {user?.displayName ? `שלום, ${user.displayName}` : 'מעקב תזונה'}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="font-extrabold text-sm sm:text-lg tracking-tight text-slate-100 truncate">
-              MyCalCount
-            </h1>
-            <p className="text-[10px] text-slate-400 truncate hidden xs:block">
-              {user?.displayName ? `שלום, ${user.displayName}` : 'מעקב תזונה'}
-            </p>
+
+          {/* Desktop Navigation Links */}
+          <div className="hidden md:flex items-center space-x-1 space-x-reverse mr-4">
+            <button
+              onClick={() => setActiveTab && setActiveTab('dashboard')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'dashboard'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Home className="w-4 h-4" /> בית
+            </button>
+            <button
+              onClick={() => setActiveTab && setActiveTab('menu')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'menu'
+                  ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <ChefHat className="w-4 h-4" /> התפריט שלי
+            </button>
+            <button
+              onClick={() => setActiveTab && setActiveTab('history')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'history'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" /> יומן ארוחות
+            </button>
           </div>
         </div>
 

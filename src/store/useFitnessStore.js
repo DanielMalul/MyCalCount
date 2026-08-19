@@ -382,6 +382,39 @@ export const useFitnessStore = create(
         }
       },
 
+      addMealsBatch: async (mealsArray) => {
+        if (!Array.isArray(mealsArray) || mealsArray.length === 0) return;
+        const dateStr = get().selectedDate || getTodayString();
+        const timestamp = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+        const newMeals = mealsArray.map((m, idx) => ({
+          id: 'meal_' + (Date.now() + idx) + '_' + Math.random().toString(36).substring(2, 6),
+          date: dateStr,
+          timestamp: timestamp,
+          food_name: m.food_name || 'ארוחה',
+          total_calories: Math.max(0, Math.round(Number(m.total_calories) || 0)),
+          protein_g: Math.max(0, Math.round(Number(m.protein_g) || 0)),
+          carbs_g: Math.max(0, Math.round(Number(m.carbs_g) || 0)),
+          fats_g: Math.max(0, Math.round(Number(m.fats_g) || 0)),
+          weight_grams: Math.max(10, Math.round(Number(m.weight_grams) || 200)),
+          explanation: m.explanation || 'תפריט מותאם מ-Gemini AI',
+          image: m.image || null
+        }));
+
+        const updatedMeals = [...newMeals, ...get().loggedMeals];
+        set({ loggedMeals: updatedMeals });
+
+        const user = get().user;
+        if (isFirebaseConfigured && db && user?.uid) {
+          try {
+            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
+          } catch (e) {
+            console.error('Firestore batch meal sync error:', e);
+          }
+        }
+      },
+
       updateMeal: async (id, updatedFields) => {
         const updatedMeals = get().loggedMeals.map((m) => (m.id === id ? { ...m, ...updatedFields } : m));
         set({ loggedMeals: updatedMeals });
