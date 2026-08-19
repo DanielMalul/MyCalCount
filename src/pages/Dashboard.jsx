@@ -17,7 +17,8 @@ import {
   RotateCcw,
   ChefHat,
   Wand2,
-  ChevronLeft
+  ChevronLeft,
+  Bot
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import Navbar from '../components/Navbar';
@@ -33,6 +34,8 @@ import AuthModal from '../components/AuthModal';
 import BottomNav from '../components/BottomNav';
 import MyMealPlanPage from '../components/MyMealPlanPage';
 import MealHistoryPage from '../components/MealHistoryPage';
+import FitnessAvatarWidget from '../components/FitnessAvatarWidget';
+import AiCoachModal from '../components/AiCoachModal';
 
 export default function Dashboard() {
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -52,6 +55,7 @@ export default function Dashboard() {
   const [isMealPlanOpen, setIsMealPlanOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isAiCoachOpen, setIsAiCoachOpen] = useState(false);
 
   // Inline calorie target editing state
   const [isEditingTarget, setIsEditingTarget] = useState(false);
@@ -89,7 +93,7 @@ export default function Dashboard() {
 
   const goalLabels = {
     cut: { label: 'חיטוב (ירידה בשומן)', icon: TrendingDown, color: 'text-rose-400' },
-    bulk: { label: 'מסה (עלייה בשריר)', icon: TrendingUp, color: 'text-emerald-400' },
+    bulk: { label: 'מסה (עלייה במסת שריר)', icon: TrendingUp, color: 'text-emerald-400' },
     recomp: { label: 'שמירה על משקל', icon: Target, color: 'text-indigo-400' }
   };
 
@@ -132,6 +136,9 @@ export default function Dashboard() {
         {/* TAB 1: MAIN DASHBOARD */}
         {activeTab === 'dashboard' && (
           <>
+            {/* Gamified Avatar & XP Level Widget */}
+            <FitnessAvatarWidget onOpenCoach={() => setIsAiCoachOpen(true)} />
+
             {/* User Target & Metric Banner */}
             <section className="glass-panel p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-800/60 shadow-xl space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -268,19 +275,19 @@ export default function Dashboard() {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
                 <div className="space-y-1 text-center sm:text-right">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-1">
-                    <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות ומחולל תפריטים Gemini AI
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות ומנטור AI
                   </div>
-                  <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה או מחזק תפריט תזונה אישי</h2>
+                  <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה או התייעץ עם מאמן התזונה AI</h2>
                   <p className="text-xs text-slate-300 max-w-md">
-                    צלם ארוחה לניתוח קלוריות, או חולל תפריט יומי מותאם אישית לפי יעד הקלוריות והזמן שלך.
+                    צלם ארוחה לניתוח קלוריות, חולל 3 אופציות לכל ארוחה, או התייעץ בזמן אמת עם מאמן התזונה האישי.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
                   <button
-                    onClick={() => setActiveTab('menu')}
+                    onClick={() => setIsAiCoachOpen(true)}
                     className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
                   >
-                    <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-purple-200" /> מחולל תפריט AI
+                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-purple-200" /> מאמן AI (24/7)
                   </button>
                   <button
                     onClick={() => setIsScannerOpen(true)}
@@ -332,6 +339,18 @@ export default function Dashboard() {
 
       </main>
 
+      {/* Floating AI Coach Floating Button */}
+      <motion.button
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsAiCoachOpen(true)}
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 px-4 py-3 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-500 text-white shadow-2xl border border-white/20 flex items-center gap-2 text-xs font-extrabold"
+        title="מנטור התזונה שלי AI"
+      >
+        <Bot className="w-5 h-5 text-purple-200 animate-pulse" />
+        <span className="hidden xs:inline">מנטור AI</span>
+      </motion.button>
+
       {/* Floating Desktop Camera Button */}
       <motion.button
         whileHover={{ scale: 1.08 }}
@@ -361,9 +380,14 @@ export default function Dashboard() {
         isOpen={isMealPlanOpen}
         onClose={() => setIsMealPlanOpen(false)}
       />
+      <AiCoachModal
+        isOpen={isAiCoachOpen}
+        onClose={() => setIsAiCoachOpen(false)}
+      />
       <OnboardingModal isOpen={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 }
+
 

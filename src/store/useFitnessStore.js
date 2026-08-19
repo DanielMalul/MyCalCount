@@ -192,6 +192,12 @@ export const useFitnessStore = create(
       savedCustomMeals: [],
       setSavedCustomMeals: (meals) => set({ savedCustomMeals: meals }),
 
+      // Gamified XP, Level & Streak Engine
+      userXp: 180,
+      streakDays: 3,
+      addXp: (amount) => set((state) => ({ userXp: (state.userXp || 0) + amount })),
+      incrementStreak: () => set((state) => ({ streakDays: (state.streakDays || 0) + 1 })),
+
       // Initialize Firebase Auth Listener & Fetch User Cloud Data in Real-Time
       initAuthListener: () => {
         if (!isFirebaseConfigured || !auth) return;
