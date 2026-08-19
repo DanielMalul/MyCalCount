@@ -12,7 +12,7 @@ export function getRankTier(xp = 0) {
   return { level: 6, title: 'אגדת כושר', icon: '👑', nextXp: 3000, prevXp: 2000, color: 'from-amber-400 via-purple-500 to-cyan-400', badgeColor: 'bg-amber-500/30 text-amber-200 border-amber-400/50' };
 }
 
-export default function FitnessAvatarWidget({ onOpenCoach }) {
+export default function FitnessAvatarWidget({ onOpenCoach, onOpenBadges }) {
   const userXp = useFitnessStore((state) => state.userXp || 180);
   const streakDays = useFitnessStore((state) => state.streakDays || 3);
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -34,7 +34,11 @@ export default function FitnessAvatarWidget({ onOpenCoach }) {
         
         {/* Avatar Badge & Rank */}
         <div className="flex items-center space-x-3 space-x-reverse min-w-0">
-          <div className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-tr ${rank.color} flex items-center justify-center text-xl sm:text-2xl shadow-lg shadow-purple-500/20 shrink-0 border border-white/20`}>
+          <div
+            onClick={onOpenBadges}
+            className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-tr ${rank.color} flex items-center justify-center text-xl sm:text-2xl shadow-lg shadow-purple-500/20 shrink-0 border border-white/20 cursor-pointer hover:scale-105 transition-transform`}
+            title="צפה בהישגים ותגים"
+          >
             {rank.icon}
           </div>
 
@@ -43,9 +47,13 @@ export default function FitnessAvatarWidget({ onOpenCoach }) {
               <span className="text-xs sm:text-sm font-extrabold text-white truncate">
                 {userProfile.name || 'דרגת כושר'}
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold border ${rank.badgeColor}`}>
-                Level {rank.level} • {rank.title}
-              </span>
+              <button
+                type="button"
+                onClick={onOpenBadges}
+                className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold border ${rank.badgeColor} hover:opacity-90 transition-opacity`}
+              >
+                Level {rank.level} • {rank.title} 🏆
+              </button>
             </div>
 
             <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
@@ -58,17 +66,30 @@ export default function FitnessAvatarWidget({ onOpenCoach }) {
           </div>
         </div>
 
-        {/* AI Coach Trigger Button */}
-        {onOpenCoach && (
-          <button
-            onClick={onOpenCoach}
-            className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs shadow-lg shadow-purple-600/30 flex items-center gap-1.5 shrink-0 transition-all border border-purple-400/30 active:scale-95"
-          >
-            <Sparkles className="w-4 h-4 text-purple-200 animate-spin-slow" />
-            <span className="hidden sm:inline">מאמן AI</span>
-            <span className="sm:hidden">מנטור</span>
-          </button>
-        )}
+        {/* Action Buttons: Badges & AI Coach */}
+        <div className="flex items-center gap-2 shrink-0">
+          {onOpenBadges && (
+            <button
+              onClick={onOpenBadges}
+              className="p-2 sm:px-3 sm:py-2.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30 flex items-center gap-1 transition-all"
+              title="לוח הישגים ותגים"
+            >
+              <Award className="w-4 h-4 text-amber-400" />
+              <span className="hidden sm:inline">הישגים</span>
+            </button>
+          )}
+
+          {onOpenCoach && (
+            <button
+              onClick={onOpenCoach}
+              className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs shadow-lg shadow-purple-600/30 flex items-center gap-1.5 transition-all border border-purple-400/30 active:scale-95"
+            >
+              <Sparkles className="w-4 h-4 text-purple-200 animate-spin-slow" />
+              <span className="hidden sm:inline">מאמן AI</span>
+              <span className="sm:hidden">מנטור</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Level Progress Bar */}

@@ -36,6 +36,8 @@ import MyMealPlanPage from '../components/MyMealPlanPage';
 import MealHistoryPage from '../components/MealHistoryPage';
 import FitnessAvatarWidget from '../components/FitnessAvatarWidget';
 import AiCoachModal from '../components/AiCoachModal';
+import FridgeRecipeModal from '../components/FridgeRecipeModal';
+import AchievementBadgesModal from '../components/AchievementBadgesModal';
 
 export default function Dashboard() {
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -56,6 +58,8 @@ export default function Dashboard() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAiCoachOpen, setIsAiCoachOpen] = useState(false);
+  const [isFridgeRecipeOpen, setIsFridgeRecipeOpen] = useState(false);
+  const [isBadgesOpen, setIsBadgesOpen] = useState(false);
 
   // Inline calorie target editing state
   const [isEditingTarget, setIsEditingTarget] = useState(false);
@@ -137,7 +141,10 @@ export default function Dashboard() {
         {activeTab === 'dashboard' && (
           <>
             {/* Gamified Avatar & XP Level Widget */}
-            <FitnessAvatarWidget onOpenCoach={() => setIsAiCoachOpen(true)} />
+            <FitnessAvatarWidget
+              onOpenCoach={() => setIsAiCoachOpen(true)}
+              onOpenBadges={() => setIsBadgesOpen(true)}
+            />
 
             {/* User Target & Metric Banner */}
             <section className="glass-panel p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-800/60 shadow-xl space-y-3">
@@ -270,30 +277,36 @@ export default function Dashboard() {
               </div>
             </section>
 
-            {/* AI Scanner & Meal Plan Hero Banner */}
+            {/* AI Scanner, Fridge Scanner & Meal Plan Hero Banner */}
             <section className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800/80 bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/20 shadow-xl relative overflow-hidden">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
                 <div className="space-y-1 text-center sm:text-right">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-1">
-                    <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות ומנטור AI
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות, מקרר ומנטור AI
                   </div>
-                  <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה או התייעץ עם מאמן התזונה AI</h2>
+                  <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה, מקרר או התייעץ ב-AI</h2>
                   <p className="text-xs text-slate-300 max-w-md">
-                    צלם ארוחה לניתוח קלוריות, חולל 3 אופציות לכל ארוחה, או התייעץ בזמן אמת עם מאמן התזונה האישי.
+                    צלם ארוחה לניתוח, המצא מתכון ממה שיש בבית, חולל 3 אופציות, או התייעץ בלייב עם המאמן.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 justify-center sm:justify-end">
+                  <button
+                    onClick={() => setIsFridgeRecipeOpen(true)}
+                    className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <ChefHat className="w-4 h-4 text-amber-100" /> מה לבשל מהמקרר?
+                  </button>
                   <button
                     onClick={() => setIsAiCoachOpen(true)}
-                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                    className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-purple-200" /> מאמן AI (24/7)
+                    <Bot className="w-4 h-4 text-purple-200" /> מאמן AI (24/7)
                   </button>
                   <button
                     onClick={() => setIsScannerOpen(true)}
-                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                    className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> סרוק ארוחה
+                    <Camera className="w-4 h-4" /> סרוק ארוחה
                   </button>
                 </div>
               </div>
@@ -383,6 +396,14 @@ export default function Dashboard() {
       <AiCoachModal
         isOpen={isAiCoachOpen}
         onClose={() => setIsAiCoachOpen(false)}
+      />
+      <FridgeRecipeModal
+        isOpen={isFridgeRecipeOpen}
+        onClose={() => setIsFridgeRecipeOpen(false)}
+      />
+      <AchievementBadgesModal
+        isOpen={isBadgesOpen}
+        onClose={() => setIsBadgesOpen(false)}
       />
       <OnboardingModal isOpen={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

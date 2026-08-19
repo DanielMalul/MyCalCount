@@ -428,6 +428,72 @@ Ensure EXACTLY 3 distinct options for breakfast_options, 3 for lunch_options, 3 
   throw lastError || new Error('שגיאה ביצירת תפריט 3 אופציות מ-Gemini AI');
 }
 
+/**
+ * AI Fridge & Pantry Recipe Generator ("מה לבשל ממה שיש בבית")
+ */
+const FRIDGE_RECIPE_PROMPT = `You are a creative chef and dietitian. Create a single delicious, quick, high-protein recipe using strictly or primarily the ingredients the user lists, designed to fit their remaining daily calories and protein.
+
+OUTPUT RULES:
+- Output MUST be strictly valid JSON in HEBREW.
+- Make the recipe simple, realistic, and tasty.
+
+JSON Schema:
+{
+  "recipe_name": string (Hebrew title),
+  "prep_time_minutes": number,
+  "difficulty": string (e.g. "קל מאוד" or "מהיר"),
+  "total_calories": number,
+  "protein_g": number,
+  "carbs_g": number,
+  "fats_g": number,
+  "weight_grams": number,
+  "ingredients_list": [string],
+  "instructions": [string],
+  "dietitian_tip": string
+}`;
+
+export async function generateFridgeRecipe({ ingredients, remainingCalories = 500, remainingProtein = 35 }) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('מפתח Gemini API חסר בקוד. נא להגדיר VITE_GEMINI_API_KEY בקובץ ה-env.');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+  let lastError = null;
+
+  const prompt = `User has these ingredients at home: "${ingredients}".
+Target for this meal: ~${remainingCalories} kcal, ~${remainingProtein}g protein.
+Create 1 creative, fast, healthy recipe. Return valid JSON only in Hebrew according to schema.`;
+
+  for (const modelName of modelNames) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: FRIDGE_RECIPE_PROMPT,
+        generationConfig: {
+          temperature: 0.3,
+          topP: 0.8,
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const result = await model.generateContent([prompt]);
+      const response = await result.response;
+      const textOutput = response.text();
+
+      return cleanAndParseJSON(textOutput);
+    } catch (err) {
+      console.warn(`Fridge recipe model ${modelName} failed, trying next...`, err);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('שגיאה ביצירת מתכון ב-Gemini AI');
+}
+
+
 
 
 
