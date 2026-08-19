@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, Sparkles, X, Check, RefreshCw, AlertCircle, Edit3, PlusCircle, Scale, Flame, Dumbbell, Wheat, PieChart, Wand2 } from 'lucide-react';
+import { Camera, Upload, Sparkles, X, Check, RefreshCw, AlertCircle, Edit3, PlusCircle, Scale, Flame, Dumbbell, Wheat, PieChart, Wand2, Volume2, Key, AlertTriangle, XCircle } from 'lucide-react';
 import { analyzeMealImage, analyzeMealText } from '../services/geminiService';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function MealScannerModal({ isOpen, onClose }) {
+export default function MealScannerModal({ isOpen, onClose, onOpenApiKeyModal }) {
   const addMeal = useFitnessStore((state) => state.addMeal);
   const geminiApiKey = useFitnessStore((state) => state.geminiApiKey);
 
@@ -16,7 +16,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
-  // Clean empty state with zero/empty defaults (No pre-filled numbers)
+  // Clean empty state with zero/empty defaults
   const [manualForm, setManualForm] = useState({
     food_name: '',
     weight_grams: '',
@@ -31,6 +31,25 @@ export default function MealScannerModal({ isOpen, onClose }) {
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
+
+  const speakIdentification = (result) => {
+    if (!result || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      let speechText = '';
+      if (result.is_food === false || result.food_name === 'לא ניתן לזיהוי') {
+        speechText = 'התמונה שצולמה אינה מכילה מאכל או משקה. אנא צלם תמונה ברורה של הארוחה.';
+      } else {
+        speechText = `זיהיתי ${result.food_name}. מנה של כ-${result.weight_grams} גרם, ${result.total_calories} קלוריות ו-${result.protein_g} גרם חלבון.`;
+      }
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.lang = 'he-IL';
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech Synthesis error:', e);
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -52,6 +71,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
     try {
       const result = await analyzeMealImage(imageDataUrl, geminiApiKey);
       setAnalysisResult(result);
+      speakIdentification(result);
     } catch (err) {
       console.error(err);
       setErrorMsg(err.message || 'ניתוח התמונה נכשל.');
@@ -78,9 +98,10 @@ export default function MealScannerModal({ isOpen, onClose }) {
         protein_g: res.protein_g,
         carbs_g: res.carbs_g,
         fats_g: res.fats_g,
-        weight_grams: requestedWeight, // Keeps the user's requested grams strictly intact
+        weight_grams: requestedWeight,
         explanation: res.explanation
       });
+      speakIdentification(res);
     } catch (err) {
       console.error(err);
       setErrorMsg('חישוב ה-AI נכשל.');
@@ -90,7 +111,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
   };
 
   const handleSaveAiMeal = () => {
-    if (!analysisResult) return;
+    if (!analysisResult || analysisResult.is_food === false || analysisResult.food_name === 'לא ניתן לזיהוי') return;
     addMeal({
       ...analysisResult,
       image: imagePreview
@@ -122,6 +143,9 @@ export default function MealScannerModal({ isOpen, onClose }) {
   };
 
   const handleReset = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     setImagePreview(null);
     setAnalysisResult(null);
     setErrorMsg('');
@@ -154,7 +178,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-100">הוספת ארוחה לתפריט</h2>
-              <p className="text-xs text-slate-400">סריקה מצולמת עם Gemini AI או הזנת גרמים ידנית</p>
+              <p className="text-xs text-slate-400">סריקה מצולמת עם Gemini Vision AI או הזנה ידנית</p>
             </div>
           </div>
           <button
@@ -241,7 +265,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                     <p className="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
                       <Sparkles className="w-4 h-4 animate-bounce" /> Gemini Vision AI מנתח את התמונה והערכים...
                     </p>
-                    <p className="text-xs text-slate-400">מעריך משקל בגרמים, קלוריות, חלבון, פחמימות ושומנים</p>
+                    <p className="text-xs text-slate-400">מזהה פריטים, משקל בגרמים/מ"ל, קלוריות ואבות מזון</p>
                   </div>
                 )}
 
@@ -254,103 +278,178 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
                 {analysisResult && !isAnalyzing && (
                   <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800/90 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5">
-                          מאומת Gemini Vision
-                        </span>
-                        <span className="text-xs text-slate-400 font-semibold">מנה של {analysisResult.weight_grams} גרם</span>
+                    {/* NON-FOOD DETECTED CARD */}
+                    {analysisResult.is_food === false || analysisResult.food_name === 'לא ניתן לזיהוי' ? (
+                      <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                          <XCircle className="w-7 h-7" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-extrabold text-rose-300">התמונה אינה מכילה מאכל או משקה</h3>
+                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                            {analysisResult.explanation || 'ה-AI לא מצא מזון, ארוחה או משקה בתמונה זו. אנא צלם תמונה ברורה של המנה.'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleReset}
+                          className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                        >
+                          <RefreshCw className="w-4 h-4" /> צלם / העלה תמונה אחרת
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        className="text-xs text-emerald-400 flex items-center gap-1 hover:underline font-semibold"
-                      >
-                        <Edit3 className="w-3 h-3" /> {isEditing ? 'סיום' : 'ערוך ערכים'}
-                      </button>
-                    </div>
-
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={analysisResult.food_name}
-                        onChange={(e) => setAnalysisResult({ ...analysisResult, food_name: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl glass-input text-sm font-bold"
-                      />
                     ) : (
-                      <h3 className="text-base font-extrabold text-white">{analysisResult.food_name}</h3>
+                      <>
+                        {/* Fallback Key Warning Banner */}
+                        {analysisResult.isFallback && (
+                          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold flex items-center gap-1.5">
+                                <AlertTriangle className="w-4 h-4 text-amber-400" /> זיהוי משוער (AI מוגבל)
+                              </span>
+                              {onOpenApiKeyModal && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onClose();
+                                    onOpenApiKeyModal();
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-bold flex items-center gap-1 transition-colors"
+                                >
+                                  <Key className="w-3.5 h-3.5" /> עדכן מפתח API
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                              {analysisResult.fallbackReason || 'מפתח ה-API אינו תקין. לקבלת זיהוי visual מדויק יש להגדיר מפתח Gemini API תקין.'}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Result Header & Audio Voice Trigger */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`p-1 rounded-lg text-xs font-bold px-2.5 py-0.5 ${
+                              analysisResult.isFallback
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-emerald-500/20 text-emerald-400'
+                            }`}>
+                              {analysisResult.isFallback ? 'חישוב משוער' : '🎯 מאומת Gemini Vision AI'}
+                            </span>
+                            <span className="text-xs text-slate-400 font-semibold">כ-{analysisResult.weight_grams} גרם/מ"ל</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => speakIdentification(analysisResult)}
+                              className="px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-1 border border-emerald-500/20 transition-colors"
+                              title="השמע את הזיהוי בקול"
+                            >
+                              <Volume2 className="w-3.5 h-3.5 animate-pulse" /> השמע זיהוי
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setIsEditing(!isEditing)}
+                              className="text-xs text-emerald-400 flex items-center gap-1 hover:underline font-semibold"
+                            >
+                              <Edit3 className="w-3 h-3" /> {isEditing ? 'סיום' : 'ערוך ערכים'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Identified Title Display */}
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={analysisResult.food_name}
+                            onChange={(e) => setAnalysisResult({ ...analysisResult, food_name: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl glass-input text-sm font-bold"
+                          />
+                        ) : (
+                          <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 border border-emerald-500/30">
+                            <span className="text-[10px] uppercase font-bold text-emerald-400 block mb-0.5">פריט זוהה:</span>
+                            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                              {analysisResult.food_name}
+                            </h3>
+                          </div>
+                        )}
+
+                        {/* Macro Breakdown Cards */}
+                        <div className="grid grid-cols-4 gap-2 text-center">
+                          <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                            <p className="text-[10px] text-slate-400 font-medium">קלוריות</p>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={analysisResult.total_calories}
+                                onChange={(e) =>
+                                  setAnalysisResult({ ...analysisResult, total_calories: Number(e.target.value) })
+                                }
+                                className="w-full text-center text-xs font-bold bg-transparent text-emerald-400"
+                              />
+                            ) : (
+                              <p className="text-sm font-black text-emerald-400">{analysisResult.total_calories} <span className="text-[10px]">קל'</span></p>
+                            )}
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                            <p className="text-[10px] text-slate-400 font-medium">חלבון</p>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={analysisResult.protein_g}
+                                onChange={(e) =>
+                                  setAnalysisResult({ ...analysisResult, protein_g: Number(e.target.value) })
+                                }
+                                className="w-full text-center text-xs font-bold bg-transparent text-indigo-400"
+                              />
+                            ) : (
+                              <p className="text-sm font-black text-indigo-400">{analysisResult.protein_g}ג'</p>
+                            )}
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                            <p className="text-[10px] text-slate-400 font-medium">פחמימות</p>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={analysisResult.carbs_g}
+                                onChange={(e) => setAnalysisResult({ ...analysisResult, carbs_g: Number(e.target.value) })}
+                                className="w-full text-center text-xs font-bold bg-transparent text-amber-400"
+                              />
+                            ) : (
+                              <p className="text-sm font-black text-amber-400">{analysisResult.carbs_g}ג'</p>
+                            )}
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                            <p className="text-[10px] text-slate-400 font-medium">שומנים</p>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={analysisResult.fats_g}
+                                onChange={(e) => setAnalysisResult({ ...analysisResult, fats_g: Number(e.target.value) })}
+                                className="w-full text-center text-xs font-bold bg-transparent text-rose-400"
+                              />
+                            ) : (
+                              <p className="text-sm font-black text-rose-400">{analysisResult.fats_g}ג'</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {analysisResult.explanation && (
+                          <p className="text-xs text-slate-300 italic bg-slate-800/40 p-3 rounded-xl border border-slate-700/40">
+                            "{analysisResult.explanation}"
+                          </p>
+                        )}
+
+                        <button
+                          onClick={handleSaveAiMeal}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Check className="w-4 h-4" /> הוסף ארוחה לתפריט היומי
+                        </button>
+                      </>
                     )}
-
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-                        <p className="text-[10px] text-slate-400 font-medium">קלוריות</p>
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={analysisResult.total_calories}
-                            onChange={(e) =>
-                              setAnalysisResult({ ...analysisResult, total_calories: Number(e.target.value) })
-                            }
-                            className="w-full text-center text-xs font-bold bg-transparent text-emerald-400"
-                          />
-                        ) : (
-                          <p className="text-sm font-black text-emerald-400">{analysisResult.total_calories} <span className="text-[10px]">קל'</span></p>
-                        )}
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-                        <p className="text-[10px] text-slate-400 font-medium">חלבון</p>
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={analysisResult.protein_g}
-                            onChange={(e) =>
-                              setAnalysisResult({ ...analysisResult, protein_g: Number(e.target.value) })
-                            }
-                            className="w-full text-center text-xs font-bold bg-transparent text-indigo-400"
-                          />
-                        ) : (
-                          <p className="text-sm font-black text-indigo-400">{analysisResult.protein_g}ג'</p>
-                        )}
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-                        <p className="text-[10px] text-slate-400 font-medium">פחמימות</p>
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={analysisResult.carbs_g}
-                            onChange={(e) => setAnalysisResult({ ...analysisResult, carbs_g: Number(e.target.value) })}
-                            className="w-full text-center text-xs font-bold bg-transparent text-amber-400"
-                          />
-                        ) : (
-                          <p className="text-sm font-black text-amber-400">{analysisResult.carbs_g}ג'</p>
-                        )}
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-                        <p className="text-[10px] text-slate-400 font-medium">שומנים</p>
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={analysisResult.fats_g}
-                            onChange={(e) => setAnalysisResult({ ...analysisResult, fats_g: Number(e.target.value) })}
-                            className="w-full text-center text-xs font-bold bg-transparent text-rose-400"
-                          />
-                        ) : (
-                          <p className="text-sm font-black text-rose-400">{analysisResult.fats_g}ג'</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {analysisResult.explanation && (
-                      <p className="text-xs text-slate-300 italic bg-slate-800/40 p-3 rounded-xl border border-slate-700/40">
-                        "{analysisResult.explanation}"
-                      </p>
-                    )}
-
-                    <button
-                      onClick={handleSaveAiMeal}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Check className="w-4 h-4" /> הוסף ארוחה לתפריט היומי
-                    </button>
                   </div>
                 )}
               </div>
@@ -368,11 +467,11 @@ export default function MealScannerModal({ isOpen, onClose }) {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">שם הארוחה / המאכל</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">שם הארוחה / המשקה</label>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="למשל: חזה עוף / 2 ביצים מקושקשות"
+                  placeholder="למשל: נס קפה עם חלב / חזה עוף ואורז"
                   value={manualForm.food_name}
                   onChange={(e) => setManualForm({ ...manualForm, food_name: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl glass-input text-xs font-bold"
@@ -399,7 +498,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
-                  <Scale className="w-3.5 h-3.5 text-emerald-400" /> משקל המנה (גרם)
+                  <Scale className="w-3.5 h-3.5 text-emerald-400" /> משקל המנה (גרם / מ"ל)
                 </label>
                 <input
                   type="number"
@@ -420,7 +519,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                   type="number"
                   min="0"
                   max="10000"
-                  placeholder="למשל: 300"
+                  placeholder="למשל: 45"
                   value={manualForm.total_calories}
                   onChange={(e) => setManualForm({ ...manualForm, total_calories: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-xs font-bold text-emerald-300"
@@ -490,3 +589,4 @@ export default function MealScannerModal({ isOpen, onClose }) {
     </div>
   );
 }
+

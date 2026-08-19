@@ -22,6 +22,7 @@ import MealScannerModal from '../components/MealScannerModal';
 import MealLogItem from '../components/MealLogItem';
 import OnboardingModal from '../components/OnboardingModal';
 import AuthModal from '../components/AuthModal';
+import ApiKeyModal from '../components/ApiKeyModal';
 import BottomNav from '../components/BottomNav';
 
 export default function Dashboard() {
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
 
   // STRICT ORDER FLOW:
   // 1. If user is NOT logged in, show AuthModal FIRST.
@@ -73,6 +75,7 @@ export default function Dashboard() {
       <Navbar
         onOpenProfileModal={() => setIsOnboardingOpen(true)}
         onOpenAuthModal={() => setIsAuthOpen(true)}
+        onOpenApiKeyModal={() => setIsApiKeyOpen(true)}
       />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 sm:pt-6 space-y-4 sm:space-y-6">
@@ -248,9 +251,15 @@ export default function Dashboard() {
       />
 
       {/* Modals */}
-      <MealScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
+      <MealScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onOpenApiKeyModal={() => setIsApiKeyOpen(true)}
+      />
       <OnboardingModal isOpen={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <ApiKeyModal isOpen={isApiKeyOpen} onClose={() => setIsApiKeyOpen(false)} />
     </div>
   );
 }
+
