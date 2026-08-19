@@ -14,7 +14,8 @@ import {
   db,
   doc,
   setDoc,
-  getDoc
+  getDoc,
+  onSnapshot
 } from '../config/firebase';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -27,6 +28,61 @@ const defaultProfile = {
   targetWeightKg: 65,
   goal: 'cut',
   activityLevel: 'moderate'
+};
+
+// Module-level real-time Firestore snapshot listener handles
+let unbindMealsSnapshot = null;
+let unbindProfileSnapshot = null;
+
+const setupRealtimeListeners = (uid, dateStr, set) => {
+  if (!isFirebaseConfigured || !db || !uid) return;
+
+  // 1. Unbind old meal snapshot listener if date or user changed
+  if (unbindMealsSnapshot) {
+    unbindMealsSnapshot();
+    unbindMealsSnapshot = null;
+  }
+
+  // 2. Setup real-time Profile listener (runs once per login)
+  if (!unbindProfileSnapshot) {
+    try {
+      const userDocRef = doc(db, 'users', uid);
+      unbindProfileSnapshot = onSnapshot(userDocRef, (userSnap) => {
+        if (userSnap.exists()) {
+          const cloudData = userSnap.data();
+          if (cloudData.profile) {
+            const newTargets = calculateTargets(cloudData.profile);
+            set({
+              userProfile: cloudData.profile,
+              dailyTargets: newTargets,
+              onboardingCompleted: true
+            });
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Firestore real-time profile listener error:', err);
+    }
+  }
+
+  // 3. Setup real-time Meals listener for the selected date
+  try {
+    const logDocRef = doc(db, 'users', uid, 'dailyLogs', dateStr);
+    unbindMealsSnapshot = onSnapshot(logDocRef, (logSnap) => {
+      if (logSnap.exists()) {
+        const logData = logSnap.data();
+        if (logData.meals && Array.isArray(logData.meals)) {
+          set({ loggedMeals: logData.meals });
+        } else {
+          set({ loggedMeals: [] });
+        }
+      } else {
+        set({ loggedMeals: [] });
+      }
+    });
+  } catch (err) {
+    console.error('Firestore real-time meals listener error:', err);
+  }
 };
 
 export const useFitnessStore = create(
@@ -54,6 +110,10 @@ export const useFitnessStore = create(
             selectedDate: today,
             lastSystemDate: today
           });
+          const user = state.user;
+          if (user?.uid) {
+            setupRealtimeListeners(user.uid, today, set);
+          }
         }
       },
 
@@ -63,7 +123,7 @@ export const useFitnessStore = create(
       steps: 0,
       stepTarget: 10000,
 
-      // Initialize Firebase Auth Listener & Fetch User Cloud Data
+      // Initialize Firebase Auth Listener & Fetch User Cloud Data in Real-Time
       initAuthListener: () => {
         if (!isFirebaseConfigured || !auth) return;
 
@@ -77,40 +137,12 @@ export const useFitnessStore = create(
             };
             set({ user: userData });
 
-            // Fetch profile data from Firestore
-            if (db) {
-              try {
-                const userDocRef = doc(db, 'users', firebaseUser.uid);
-                const userSnap = await getDoc(userDocRef);
-
-                if (userSnap.exists()) {
-                  const cloudData = userSnap.data();
-                  if (cloudData.profile) {
-                    const newTargets = calculateTargets(cloudData.profile);
-                    set({
-                      userProfile: cloudData.profile,
-                      dailyTargets: newTargets,
-                      onboardingCompleted: true
-                    });
-                  }
-                }
-
-                // Fetch today's meals from Firestore
-                const todayStr = get().selectedDate || getTodayString();
-                const logDocRef = doc(db, 'users', firebaseUser.uid, 'dailyLogs', todayStr);
-                const logSnap = await getDoc(logDocRef);
-
-                if (logSnap.exists()) {
-                  const logData = logSnap.data();
-                  if (logData.meals && Array.isArray(logData.meals)) {
-                    set({ loggedMeals: logData.meals });
-                  }
-                }
-              } catch (err) {
-                console.error('Firestore cloud data fetch error:', err);
-              }
-            }
+            // Setup real-time listeners for profile and meals
+            const targetDate = get().selectedDate || getTodayString();
+            setupRealtimeListeners(firebaseUser.uid, targetDate, set);
           } else {
+            if (unbindMealsSnapshot) { unbindMealsSnapshot(); unbindMealsSnapshot = null; }
+            if (unbindProfileSnapshot) { unbindProfileSnapshot(); unbindProfileSnapshot = null; }
             set({ user: null });
           }
         });
@@ -144,6 +176,7 @@ export const useFitnessStore = create(
             await setDoc(doc(db, 'users', res.user.uid), { profile: currentProfile }, { merge: true });
           }
 
+          setupRealtimeListeners(res.user.uid, get().selectedDate || getTodayString(), set);
           return userData;
         } catch (err) {
           set({ isAuthLoading: false });
@@ -168,31 +201,7 @@ export const useFitnessStore = create(
           };
           set({ user: userData, isAuthLoading: false });
 
-          // Pull user profile and meals from Firestore
-          if (db) {
-            const userSnap = await getDoc(doc(db, 'users', res.user.uid));
-            if (userSnap.exists()) {
-              const cloudData = userSnap.data();
-              if (cloudData.profile) {
-                const newTargets = calculateTargets(cloudData.profile);
-                set({
-                  userProfile: cloudData.profile,
-                  dailyTargets: newTargets,
-                  onboardingCompleted: true
-                });
-              }
-            }
-
-            const todayStr = get().selectedDate || getTodayString();
-            const logSnap = await getDoc(doc(db, 'users', res.user.uid, 'dailyLogs', todayStr));
-            if (logSnap.exists()) {
-              const logData = logSnap.data();
-              if (logData.meals && Array.isArray(logData.meals)) {
-                set({ loggedMeals: logData.meals });
-              }
-            }
-          }
-
+          setupRealtimeListeners(res.user.uid, get().selectedDate || getTodayString(), set);
           return userData;
         } catch (err) {
           set({ isAuthLoading: false });
@@ -218,22 +227,7 @@ export const useFitnessStore = create(
           };
           set({ user: userData, isAuthLoading: false });
 
-          // Fetch cloud profile
-          if (db) {
-            const userSnap = await getDoc(doc(db, 'users', res.user.uid));
-            if (userSnap.exists()) {
-              const cloudData = userSnap.data();
-              if (cloudData.profile) {
-                const newTargets = calculateTargets(cloudData.profile);
-                set({
-                  userProfile: cloudData.profile,
-                  dailyTargets: newTargets,
-                  onboardingCompleted: true
-                });
-              }
-            }
-          }
-
+          setupRealtimeListeners(res.user.uid, get().selectedDate || getTodayString(), set);
           return userData;
         } catch (err) {
           set({ isAuthLoading: false });
@@ -242,6 +236,8 @@ export const useFitnessStore = create(
       },
 
       logout: async () => {
+        if (unbindMealsSnapshot) { unbindMealsSnapshot(); unbindMealsSnapshot = null; }
+        if (unbindProfileSnapshot) { unbindProfileSnapshot(); unbindProfileSnapshot = null; }
         if (isFirebaseConfigured && auth) {
           await signOut(auth);
         }
@@ -287,7 +283,13 @@ export const useFitnessStore = create(
         }
       },
 
-      setSelectedDate: (dateStr) => set({ selectedDate: dateStr }),
+      setSelectedDate: (dateStr) => {
+        set({ selectedDate: dateStr });
+        const user = get().user;
+        if (user?.uid) {
+          setupRealtimeListeners(user.uid, dateStr, set);
+        }
+      },
 
       // Meal Management
       addMeal: (meal) => {

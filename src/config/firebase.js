@@ -9,7 +9,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCqFwU77GwLktAudCPWtZebSz6zsDxTmzM',
@@ -53,5 +53,7 @@ export {
   signInWithPopup,
   doc,
   setDoc,
-  getDoc
+  getDoc,
+  onSnapshot
 };
+
