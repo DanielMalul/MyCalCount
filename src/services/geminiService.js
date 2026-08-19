@@ -259,6 +259,90 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
   throw lastError || new Error('שגיאה בחיבור לשרתי Gemini AI');
 }
 
+/**
+ * AI Personalized Meal Plan Generator
+ */
+const MEAL_PLANNER_PROMPT = `You are a master sports dietitian and executive chef. Create a highly customized, delicious, realistic daily meal plan tailored strictly to the user's nutritional targets and preferences.
+
+OUTPUT RULES:
+- Output MUST be strictly valid JSON in HEBREW.
+- Ensure the SUM of calories and macros across all meals matches the total daily targets closely (within +/- 3%).
+
+JSON Schema:
+{
+  "plan_title": string (Hebrew catchy title e.g. "תפריט חיטוב מבוקר 2000 קלוריות"),
+  "summary_note": string (1-2 sentences in Hebrew giving professional dietitian advice for this plan),
+  "total_plan_calories": number,
+  "total_plan_protein": number,
+  "total_plan_carbs": number,
+  "total_plan_fats": number,
+  "meals": [
+    {
+      "meal_type": string (e.g. "ארוחת בוקר", "ארוחת צהריים", "ארוחת ערב", "ארוחת ביניים / נשנוש"),
+      "food_name": string (Hebrew meal title),
+      "weight_grams": number,
+      "total_calories": number,
+      "protein_g": number,
+      "carbs_g": number,
+      "fats_g": number,
+      "explanation": string (Short 1 sentence Hebrew description of ingredients and preparation)
+    }
+  ]
+}`;
+
+export async function generateAiMealPlan({ userProfile, dailyTargets, preferences = {}, mealCount = 3 }) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('מפתח Gemini API חסר בקוד. נא להגדיר VITE_GEMINI_API_KEY בקובץ ה-env.');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+  let lastError = null;
+
+  const goalText = userProfile?.goal === 'cut' ? 'חיטוב ושריפת שומן' : userProfile?.goal === 'bulk' ? 'עלייה במסת שריר' : 'שמירה על משקל';
+  const paceText = userProfile?.pace === 'fast' ? 'מהיר/אגרסיבי' : userProfile?.pace === 'slow' ? 'איטי ומבוקר' : 'בינוני/מאוזן';
+  const dietaryPref = preferences.diet || 'ללא הגבלה (כשר/רגיל)';
+  const notes = preferences.notes || '';
+
+  const prompt = `Create a ${mealCount}-meal daily plan for a user with the following targets:
+- Goal: ${goalText} (Pace: ${paceText})
+- Target Calories: ${dailyTargets.targetCalories} kcal
+- Target Protein: ${dailyTargets.proteinGrams}g
+- Target Carbs: ${dailyTargets.carbGrams}g
+- Target Fats: ${dailyTargets.fatGrams}g
+- Dietary preference: ${dietaryPref}
+- Special requests: ${notes}
+
+Ensure exactly ${mealCount} meals. Return valid JSON only in Hebrew according to schema.`;
+
+  for (const modelName of modelNames) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: MEAL_PLANNER_PROMPT,
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.8,
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const result = await model.generateContent([prompt]);
+      const response = await result.response;
+      const textOutput = response.text();
+
+      return cleanAndParseJSON(textOutput);
+    } catch (err) {
+      console.warn(`Meal plan model ${modelName} failed, trying next...`, err);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('שגיאה ביצירת תפריט מ-Gemini AI');
+}
+
 
 
 

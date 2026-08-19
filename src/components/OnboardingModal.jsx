@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Target, Activity, Dumbbell, ChevronRight, ChevronLeft, Check, Sparkles } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
-import { calculateTargets } from '../utils/fitnessMath';
+import { calculateTargets, PACES } from '../utils/fitnessMath';
 
 export const HEBREW_GOALS = {
   cut: { label: 'חיטוב (ירידה באחוז השומן)', calOffset: -500, desc: 'גירעון קלורי מבוקר לשריפת שומן ושמירה על מסת שריר' },
@@ -30,7 +30,9 @@ export default function OnboardingModal({ isOpen, onClose }) {
     currentWeightKg: currentProfile.currentWeightKg || 70,
     targetWeightKg: currentProfile.targetWeightKg || 65,
     goal: currentProfile.goal || 'cut',
-    activityLevel: currentProfile.activityLevel || 'moderate'
+    activityLevel: currentProfile.activityLevel || 'moderate',
+    customTargetCalories: currentProfile.customTargetCalories || '',
+    pace: currentProfile.pace || 'moderate'
   });
 
   if (!isOpen) return null;
@@ -192,6 +194,30 @@ export default function OnboardingModal({ isOpen, onClose }) {
               </div>
 
               <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-medium text-slate-400">יעד קלוריות מותאם אישית (אופציונלי)</label>
+                  {formData.customTargetCalories && (
+                    <button
+                      type="button"
+                      onClick={() => handleChange('customTargetCalories', '')}
+                      className="text-[11px] text-amber-400 hover:underline"
+                    >
+                      חזור לחישוב אוטומטי
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  min="500"
+                  max="10000"
+                  placeholder="השאר ריק לחישוב אוטומטי לפי BMR/TDEE"
+                  value={formData.customTargetCalories}
+                  onChange={(e) => handleChange('customTargetCalories', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl glass-input text-sm font-bold text-cyan-300 placeholder:font-normal placeholder:text-slate-500"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-medium text-slate-400 mb-2">מטרה עיקרית</label>
                 <div className="grid grid-cols-1 gap-3">
                   {Object.entries(HEBREW_GOALS).map(([key, item]) => (
@@ -216,6 +242,27 @@ export default function OnboardingModal({ isOpen, onClose }) {
                       }`}>
                         {formData.goal === key && <Check className="w-3 h-3" />}
                       </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-2">קצב ירידה / עליה במשקל (לפי זמן)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(PACES).map(([key, item]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleChange('pace', key)}
+                      className={`p-3 rounded-xl border text-right transition-all flex flex-col justify-between ${
+                        formData.pace === key
+                          ? 'bg-purple-500/20 border-purple-400 text-purple-300 shadow-md'
+                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="text-xs font-extrabold block">{item.label}</span>
+                      <span className="text-[10px] text-slate-400 block mt-1">{item.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -261,13 +308,20 @@ export default function OnboardingModal({ isOpen, onClose }) {
         </AnimatePresence>
 
         {/* Live Calculation Preview Footer Card */}
-        <div className="mt-6 p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+        <div className="mt-6 p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 space-y-2">
+          <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-1">
             <span className="flex items-center gap-1 text-cyan-400 font-semibold">
               <Flame className="w-3.5 h-3.5" /> יעדים יומאיים מחושבים
             </span>
             <span>BMR: {calculated.bmr} קלוריות | TDEE: {calculated.tdee} קלוריות</span>
           </div>
+
+          {calculated.estimatedTime && calculated.estimatedTime.text && (
+            <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold flex items-center justify-between">
+              <span>⏱️ זמן משוער להגעה ל-{formData.targetWeightKg} ק"ג:</span>
+              <span className="text-white">{calculated.estimatedTime.text}</span>
+            </div>
+          )}
           <div className="grid grid-cols-4 gap-2 text-center pt-2 border-t border-slate-800">
             <div>
               <p className="text-xs text-slate-400">קלוריות</p>
