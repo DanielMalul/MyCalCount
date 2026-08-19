@@ -42,8 +42,20 @@ export const useFitnessStore = create(
       dailyTargets: calculateTargets(defaultProfile),
       geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
 
-      // Selected Date Filter
+      // Selected Date Filter & Auto Day Sync
       selectedDate: getTodayString(),
+      lastSystemDate: getTodayString(),
+
+      syncTodayDate: () => {
+        const today = getTodayString();
+        const state = get();
+        if (state.lastSystemDate !== today) {
+          set({
+            selectedDate: today,
+            lastSystemDate: today
+          });
+        }
+      },
 
       // Daily Logs
       loggedMeals: [],
