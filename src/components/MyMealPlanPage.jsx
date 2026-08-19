@@ -5,46 +5,67 @@ import { useFitnessStore } from '../store/useFitnessStore';
 
 export const PRESET_MEALS_DATABASE = {
   cut: [
-    // Breakfast
-    { id: 'cut_b1', category: 'breakfast', food_name: 'חביתת 3 ביצים עם תרד וגבינה בולגרית 5%', weight_grams: 220, total_calories: 280, protein_g: 26, carbs_g: 3, fats_g: 18, explanation: 'חלבון גבוה ודל פחמימה לחיטוב ושריפת שומן' },
-    { id: 'cut_b2', category: 'breakfast', food_name: 'שיבולת שועל על בסיס מים/חלב דל שומן עם סקופ חלבון ופירות יער', weight_grams: 300, total_calories: 340, protein_g: 32, carbs_g: 40, fats_g: 5, explanation: 'ארוחת בוקר משביעה ועשירה בסיבים תזונתיים וחלבון' },
-    { id: 'cut_b3', category: 'breakfast', food_name: 'יוגורט פרו 20ג\' חלבון עם כפית חמאת בוטנים טבעית וחצי תפוח', weight_grams: 250, total_calories: 230, protein_g: 22, carbs_g: 18, fats_g: 7, explanation: 'ארוחת בוקר קלה ומהירה להכנה' },
+    // Breakfast (3 options)
+    { id: 'cut_b1', category: 'breakfast', food_name: 'חביתת 3 ביצים עם תרד וגבינה בולגרית 5%', weight_grams: 220, total_calories: 280, protein_g: 26, carbs_g: 3, fats_g: 18, explanation: 'אופציה 1: חלבון גבוה ודל פחמימה לחיטוב ושריפת שומן' },
+    { id: 'cut_b2', category: 'breakfast', food_name: 'שיבולת שועל עם חלב דל שומן, סקופ חלבון ופירות יער', weight_grams: 300, total_calories: 340, protein_g: 32, carbs_g: 40, fats_g: 5, explanation: 'אופציה 2: ארוחת בוקר משביעה ועשירה בסיבים תזונתיים וחלבון' },
+    { id: 'cut_b3', category: 'breakfast', food_name: 'יוגורט פרו 20ג\' חלבון עם כפית חמאת בוטנים טבעית וחצי תפוח', weight_grams: 250, total_calories: 230, protein_g: 22, carbs_g: 18, fats_g: 7, explanation: 'אופציה 3: ארוחת בוקר קלה ומהירה להכנה' },
 
-    // Lunch
-    { id: 'cut_l1', category: 'lunch', food_name: 'חזה עוף בגריל (200ג\') עם 150ג\' אורז בסמטי וסלט ירקות עשיר', weight_grams: 450, total_calories: 450, protein_g: 52, carbs_g: 42, fats_g: 6, explanation: 'ארוחת צהריים קלאסית לחיטוב איכותי' },
-    { id: 'cut_l2', category: 'lunch', food_name: 'פילה סלומון בתנור (180ג\') עם בטטה אפויה ופרחי ברוקולי', weight_grams: 400, total_calories: 490, protein_g: 42, carbs_g: 30, fats_g: 22, explanation: 'אומגה 3, שומנים בריאים וחלבון איכותי' },
-    { id: 'cut_l3', category: 'lunch', food_name: 'קופסת טונה במים עם קינואה מבושלת, מלפפון, עגבניה וכפית שמן זית', weight_grams: 350, total_calories: 380, protein_g: 38, carbs_g: 35, fats_g: 10, explanation: 'סלט טונה וקינואה קל, משביע ומהיר' },
+    // Lunch (3 options)
+    { id: 'cut_l1', category: 'lunch', food_name: 'חזה עוף בגריל (200ג\') עם 150ג\' אורז בסמטי וסלט ירקות עשיר', weight_grams: 450, total_calories: 450, protein_g: 52, carbs_g: 42, fats_g: 6, explanation: 'אופציה 1: ארוחת צהריים קלאסית לחיטוב איכותי' },
+    { id: 'cut_l2', category: 'lunch', food_name: 'פילה סלומון בתנור (180ג\') עם בטטה אפויה ופרחי ברוקולי', weight_grams: 400, total_calories: 490, protein_g: 42, carbs_g: 30, fats_g: 22, explanation: 'אופציה 2: אומגה 3, שומנים בריאים וחלבון איכותי' },
+    { id: 'cut_l3', category: 'lunch', food_name: 'קופסת טונה במים עם קינואה מבושלת, מלפפון, עגבניה וכפית שמן זית', weight_grams: 350, total_calories: 380, protein_g: 38, carbs_g: 35, fats_g: 10, explanation: 'אופציה 3: סלט טונה וקינואה קל, משביע ומהיר' },
 
-    // Dinner
-    { id: 'cut_d1', category: 'dinner', food_name: 'סלט עוף גדול: חזה עוף (180ג\') עלי בייבי, עגבניות שרי וכף טחינה', weight_grams: 400, total_calories: 360, protein_g: 46, carbs_g: 12, fats_g: 14, explanation: 'ארוחת ערב קלה עם חלבון גבוה ודלת פחמימות' },
-    { id: 'cut_d2', category: 'dinner', food_name: 'שקשוקה בייתית מ-2 ביצים + 100ג\' גבינה לבנה 3% ולחם קל (2 פרוסות)', weight_grams: 350, total_calories: 350, protein_g: 28, carbs_g: 24, fats_g: 15, explanation: 'ארוחת ערב ישראלית משביעה ומאוזנת' },
+    // Dinner (3 options)
+    { id: 'cut_d1', category: 'dinner', food_name: 'סלט עוף גדול: חזה עוף (180ג\') עלי בייבי, עגבניות שרי וכף טחינה', weight_grams: 400, total_calories: 360, protein_g: 46, carbs_g: 12, fats_g: 14, explanation: 'אופציה 1: ארוחת ערב קלה עם חלבון גבוה ודלת פחמימות' },
+    { id: 'cut_d2', category: 'dinner', food_name: 'שקשוקה בייתית מ-2 ביצים + 100ג\' גבינה לבנה 3% ולחם קל (2 פרוסות)', weight_grams: 350, total_calories: 350, protein_g: 28, carbs_g: 24, fats_g: 15, explanation: 'אופציה 2: ארוחת ערב ישראלית משביעה ומאוזנת' },
+    { id: 'cut_d3', category: 'dinner', food_name: 'פילה דג דניס בתנור (200ג\') עם ירקות ירוקים מוקפצים בשמן זית', weight_grams: 380, total_calories: 370, protein_g: 40, carbs_g: 10, fats_g: 18, explanation: 'אופציה 3: ארוחת ערב קלה לעיכול ועתירת חלבון' },
 
-    // Snacks
-    { id: 'cut_s1', category: 'snack', food_name: 'עוגיות פריכיות אורז (3 יח\') עם מעט גבינה לבנה 5% ופרוסות מלפפון', weight_grams: 120, total_calories: 130, protein_g: 7, carbs_g: 20, fats_g: 2, explanation: 'נשנוש קל בין ארוחות' },
-    { id: 'cut_s2', category: 'snack', food_name: 'חטיף חלבון (60ג\') 20ג\' חלבון', weight_grams: 60, total_calories: 210, protein_g: 20, carbs_g: 22, fats_g: 7, explanation: 'פתרון מתוק וזמין לחלבון' }
+    // Snacks (3 options)
+    { id: 'cut_s1', category: 'snack', food_name: 'עוגיות פריכיות אורז (3 יח\') עם מעט גבינה לבנה 5% ופרוסות מלפפון', weight_grams: 120, total_calories: 130, protein_g: 7, carbs_g: 20, fats_g: 2, explanation: 'אופציה 1: נשנוש קל בין ארוחות' },
+    { id: 'cut_s2', category: 'snack', food_name: 'חטיף חלבון (60ג\') 20ג\' חלבון', weight_grams: 60, total_calories: 210, protein_g: 20, carbs_g: 22, fats_g: 7, explanation: 'אופציה 2: פתרון מתוק וזמין לחלבון' },
+    { id: 'cut_s3', category: 'snack', food_name: 'פרוסת לחם קל עם פרוסת גבינה צהובה 9% ועגבניה', weight_grams: 80, total_calories: 120, protein_g: 9, carbs_g: 12, fats_g: 3, explanation: 'אופציה 3: נשנוש מהיר, דל קלוריות וטעים' }
   ],
   bulk: [
-    // Breakfast
-    { id: 'bulk_b1', category: 'breakfast', food_name: 'שייק מסה עשיר: 2 כוסות חלב, 2 סקופ חלבון, 80ג\' שיבולת שועל וכף חמאת בוטנים', weight_grams: 550, total_calories: 780, protein_g: 62, carbs_g: 80, fats_g: 22, explanation: 'פצצת קלוריות וחלבון לעלייה במסת שריר' },
-    { id: 'bulk_b2', category: 'breakfast', food_name: 'חביתה מ-4 ביצים עם 2 פרוסות לחם מלא, אבוקדו שלם וגבינה צהובה', weight_grams: 400, total_calories: 650, protein_g: 36, carbs_g: 38, fats_g: 38, explanation: 'ארוחת בוקר עשירה בשומנים בריאים וחלבון' },
+    // Breakfast (3 options)
+    { id: 'bulk_b1', category: 'breakfast', food_name: 'שייק מסה עשיר: 2 כוסות חלב, 2 סקופ חלבון, 80ג\' שיבולת שועל וכף חמאת בוטנים', weight_grams: 550, total_calories: 780, protein_g: 62, carbs_g: 80, fats_g: 22, explanation: 'אופציה 1: פצצת קלוריות וחלבון לעלייה במסת שריר' },
+    { id: 'bulk_b2', category: 'breakfast', food_name: 'חביתה מ-4 ביצים עם 2 פרוסות לחם מלא, אבוקדו שלם וגבינה צהובה', weight_grams: 400, total_calories: 650, protein_g: 36, carbs_g: 38, fats_g: 38, explanation: 'אופציה 2: ארוחת בוקר עשירה בשומנים בריאים וחלבון' },
+    { id: 'bulk_b3', category: 'breakfast', food_name: 'פנקייק חלבון: 2 ביצים, סקופ חלבון, 70ג\' שיבולת שועל, בננה וכף דבש', weight_grams: 350, total_calories: 620, protein_g: 45, carbs_g: 75, fats_g: 14, explanation: 'אופציה 3: פנקייק מפנק ועשיר בפחמימות מורכבות וחלבון' },
 
-    // Lunch
-    { id: 'bulk_l1', category: 'lunch', food_name: 'המבורגר בקר נקי (250ג\') בלחמניה מקמח מלא עם תפוחי אדמה אפויים', weight_grams: 500, total_calories: 820, protein_g: 58, carbs_g: 75, fats_g: 32, explanation: 'ארוחת צהריים מפנקת ועשירה בקלוריות לבניית שריר' },
-    { id: 'bulk_l2', category: 'lunch', food_name: 'פרגיות בגריל (250ג\') עם 250ג\' פסטה ברוטב עגבניות ושמן זית', weight_grams: 550, total_calories: 890, protein_g: 64, carbs_g: 90, fats_g: 28, explanation: 'עודף קלורי איכותי להתאוששות וגדילה' },
+    // Lunch (3 options)
+    { id: 'bulk_l1', category: 'lunch', food_name: 'המבורגר בקר נקי (250ג\') בלחמניה מקמח מלא עם תפוחי אדמה אפויים', weight_grams: 500, total_calories: 820, protein_g: 58, carbs_g: 75, fats_g: 32, explanation: 'אופציה 1: ארוחת צהריים מפנקת ועשירה בקלוריות לבניית שריר' },
+    { id: 'bulk_l2', category: 'lunch', food_name: 'פרגיות בגריל (250ג\') עם 250ג\' פסטה ברוטב עגבניות ושמן זית', weight_grams: 550, total_calories: 890, protein_g: 64, carbs_g: 90, fats_g: 28, explanation: 'אופציה 2: עודף קלורי איכותי להתאוששות וגדילה' },
+    { id: 'bulk_l3', category: 'lunch', food_name: 'חזה עוף מוקפץ בטריאקי (250ג\') עם נודלס מקמח מלא וירקות', weight_grams: 500, total_calories: 790, protein_g: 60, carbs_g: 85, fats_g: 20, explanation: 'אופציה 3: ארוחת מוקפץ עשירה בפחמימות זמינות וחלבון' },
 
-    // Dinner
-    { id: 'bulk_d1', category: 'dinner', food_name: 'טורטיה מקמח מלא במילוי בשר טחון (200ג\'), שעועית אדומה, אורז וטחינה', weight_grams: 450, total_calories: 720, protein_g: 48, carbs_g: 70, fats_g: 26, explanation: 'טורטיה מקסיקנית עשירה ומזינה' },
+    // Dinner (3 options)
+    { id: 'bulk_d1', category: 'dinner', food_name: 'טורטיה מקמח מלא במילוי בשר טחון (200ג\'), שעועית אדומה, אורז וטחינה', weight_grams: 450, total_calories: 720, protein_g: 48, carbs_g: 70, fats_g: 26, explanation: 'אופציה 1: טורטיה מקסיקנית עשירה ומזינה' },
+    { id: 'bulk_d2', category: 'dinner', food_name: 'סטייק סינטה עסיסי (250ג\') עם פירה תפוחי אדמה וסלט ירוק', weight_grams: 480, total_calories: 750, protein_g: 62, carbs_g: 50, fats_g: 30, explanation: 'אופציה 2: ארוחת ערב עשירה בברזל, קריאטין וחלבון' },
+    { id: 'bulk_d3', category: 'dinner', food_name: 'פיצה חלבון ביתית: בסיס קמח מלא, 150ג\' עוף טחון, גבינה 15% וירקות', weight_grams: 420, total_calories: 680, protein_g: 55, carbs_g: 65, fats_g: 22, explanation: 'אופציה 3: פיצה עשירה בחלבון ללא רגשות אשם' },
 
-    // Snacks
-    { id: 'bulk_s1', category: 'snack', food_name: 'חופן אגוזי מלך ושקדים (50ג\') + בננה גדולה', weight_grams: 170, total_calories: 420, protein_g: 10, carbs_g: 35, fats_g: 28, explanation: 'נשנוש עתיר אנרגיה ושומן בריא' }
+    // Snacks (3 options)
+    { id: 'bulk_s1', category: 'snack', food_name: 'חופן אגוזי מלך ושקדים (50ג\') + בננה גדולה', weight_grams: 170, total_calories: 420, protein_g: 10, carbs_g: 35, fats_g: 28, explanation: 'אופציה 1: נשנוש עתיר אנרגיה ושומן בריא' },
+    { id: 'bulk_s2', category: 'snack', food_name: 'יוגורט יווני עשיר (200ג\') עם גרנולה, דבש ו-20ג\' שקדים', weight_grams: 280, total_calories: 440, protein_g: 24, carbs_g: 48, fats_g: 16, explanation: 'אופציה 2: נשנוש מתוק, עשיר בקלוריות וחלבון' },
+    { id: 'bulk_s3', category: 'snack', food_name: '2 פרוסות לחם מלא עם 2 כפות חמאת בוטנים וסילאן טבעי', weight_grams: 150, total_calories: 460, protein_g: 16, carbs_g: 52, fats_g: 20, explanation: 'אופציה 3: כריך אנרגטי ומהיר להכנה' }
   ],
   recomp: [
-    // Breakfast
-    { id: 'recomp_b1', category: 'breakfast', food_name: 'חביתה מ-2 ביצים + חלבונים עם פרוסת לחם דגנים ואבוקדו (חצי)', weight_grams: 250, total_calories: 360, protein_g: 22, carbs_g: 20, fats_g: 20, explanation: 'מאוזן באופן מושלם לריקומפ' },
-    // Lunch
-    { id: 'recomp_l1', category: 'lunch', food_name: 'חזה עוף (200ג\') עם בטטה אפויה בתנור (200ג\') וירקות ירוקים', weight_grams: 450, total_calories: 520, protein_g: 48, carbs_g: 48, fats_g: 12, explanation: 'איזון מדויק לפחמימה, חלבון ושומן' },
-    // Dinner
-    { id: 'recomp_d1', category: 'dinner', food_name: 'סלט טונה עם ביצה קשה, תירס, מלפפון חמוץ וכף מיונז לייט', weight_grams: 350, total_calories: 420, protein_g: 38, carbs_g: 18, fats_g: 20, explanation: 'ארוחת ערב טעימה ומשביעה' }
+    // Breakfast (3 options)
+    { id: 'recomp_b1', category: 'breakfast', food_name: 'חביתה מ-2 ביצים + חלבונים עם פרוסת לחם דגנים ואבוקדו (חצי)', weight_grams: 250, total_calories: 360, protein_g: 22, carbs_g: 20, fats_g: 20, explanation: 'אופציה 1: מאוזן באופן מושלם לריקומפ' },
+    { id: 'recomp_b2', category: 'breakfast', food_name: 'שיבולת שועל (50ג\') עם כוס חלב, סקופ חלבון וקורט קינמון', weight_grams: 320, total_calories: 390, protein_g: 32, carbs_g: 45, fats_g: 8, explanation: 'אופציה 2: ארוחת בוקר מאוזנת לשמירה על מסת שריר' },
+    { id: 'recomp_b3', category: 'breakfast', food_name: 'יוגורט עיזים/יווני (200ג\') עם פירות העונה וכף זרעי צ\'יה', weight_grams: 260, total_calories: 310, protein_g: 20, carbs_g: 28, fats_g: 11, explanation: 'אופציה 3: פרוביוטיקה, סיבים וחלבון מזין' },
+
+    // Lunch (3 options)
+    { id: 'recomp_l1', category: 'lunch', food_name: 'חזה עוף (200ג\') עם בטטה אפויה בתנור (200ג\') וירקות ירוקים', weight_grams: 450, total_calories: 520, protein_g: 48, carbs_g: 48, fats_g: 12, explanation: 'אופציה 1: איזון מדויק לפחמימה, חלבון ושומן' },
+    { id: 'recomp_l2', category: 'lunch', food_name: 'פילה סלומון אפוי (200ג\') עם כוס אורז מלא וסלט קצוץ', weight_grams: 430, total_calories: 560, protein_g: 44, carbs_g: 40, fats_g: 24, explanation: 'אופציה 2: שומנים איכותיים מאומגה 3 ופחמימה מורכבת' },
+    { id: 'recomp_l3', category: 'lunch', food_name: 'חזה הודו שווארמה ביתי (200ג\') בצלחת עם כוס בורגול וטחינה', weight_grams: 420, total_calories: 540, protein_g: 50, carbs_g: 42, fats_g: 18, explanation: 'אופציה 3: ארוחה עשירה בברזל וחלבון רזה' },
+
+    // Dinner (3 options)
+    { id: 'recomp_d1', category: 'dinner', food_name: 'סלט טונה עם ביצה קשה, תירס, מלפפון חמוץ וכף מיונז לייט', weight_grams: 350, total_calories: 420, protein_g: 38, carbs_g: 18, fats_g: 20, explanation: 'אופציה 1: ארוחת ערב טעימה ומשביעה' },
+    { id: 'recomp_d2', category: 'dinner', food_name: 'שקשוקה טופו / ביצים מ-2 ביצים, גבינה צהובה 9% וסלט קצוץ', weight_grams: 380, total_calories: 410, protein_g: 30, carbs_g: 16, fats_g: 24, explanation: 'אופציה 2: ארוחת ערב קלה לעיכול וטעימה' },
+    { id: 'recomp_d3', category: 'dinner', food_name: 'כריך חזה עוף/טונה בלחם קל עם ממרח אבוקדו וירקות חתוכים', weight_grams: 300, total_calories: 380, protein_g: 36, carbs_g: 30, fats_g: 12, explanation: 'אופציה 3: כריך ערב קליל ומשביע' },
+
+    // Snacks (3 options)
+    { id: 'recomp_s1', category: 'snack', food_name: 'חטיף חלבון 20ג\' חלבון + תפוח עץ ירוק', weight_grams: 180, total_calories: 260, protein_g: 21, carbs_g: 32, fats_g: 6, explanation: 'אופציה 1: נשנוש מאוזן בין ארוחות' },
+    { id: 'recomp_s2', category: 'snack', food_name: 'מעדן חלבון פרו 20ג\' עם 10 שקדים טבעיים', weight_grams: 220, total_calories: 240, protein_g: 22, carbs_g: 15, fats_g: 9, explanation: 'אופציה 2: נשנוש קל דל פחמימה ועשיר בחלבון' },
+    { id: 'recomp_s3', category: 'snack', food_name: '2 פריכיות דגנים עם כף חמאת בוטנים ופרוסות בננה', weight_grams: 100, total_calories: 250, protein_g: 8, carbs_g: 32, fats_g: 10, explanation: 'אופציה 3: אנרגיה זמינה לפני אימון' }
   ]
 };
 
