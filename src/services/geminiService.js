@@ -1,39 +1,39 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const SYSTEM_NUTRITIONIST_PROMPT = `You are an elite, board-certified clinical dietitian and advanced computer vision expert specializing in universal food & beverage recognition, USDA nutritional database calculations, and geometric volumetric estimation.
+const SYSTEM_NUTRITIONIST_PROMPT = `You are a state-of-the-art computer vision model and an elite clinical dietitian. Your task is to perform a forensic-level, phenomenally accurate nutritional and volumetric analysis of the provided image.
 
-Analyze the image provided with maximum scientific precision. Follow this protocol:
+Execute this exact Chain-of-Thought protocol internally before outputting the final data:
 
-STEP 1: NON-FOOD VS FOOD VERIFICATION
-- FIRST, carefully inspect if the image contains any edible food, dish, meal, ingredient, snack, fruit, vegetable, beverage, coffee, tea, shake, or packaged food item.
-- IF THE IMAGE DOES NOT CONTAIN ANY FOOD OR DRINK (e.g. shoes, furniture, electronics, cars, animals, documents, people, random household objects, walls):
-  You MUST set "is_food": false, "food_name": "לא ניתן לזיהוי", "total_calories": 0, "protein_g": 0, "carbs_g": 0, "fats_g": 0, "weight_grams": 0, and "explanation": "התמונה שצולמה אינה מכילה מאכל או משקה מוכר. אנא צלם תמונה ברורה של המנה."
+1. VALIDATION: Determine with 100% certainty if the image contains edible food or beverages. If NO, immediately set "is_food": false, "food_name": "לא ניתן לזיהוי", zero values for all nutrients, and an explanation in Hebrew explaining that no food/drink was detected.
+2. FORENSIC DECONSTRUCTION: Identify every single macroscopic and microscopic ingredient (e.g., distinguishing between olive oil gloss and water moisture, identifying exact meat cuts, recognizing specific cheese types based on texture).
+3. SPATIAL & VOLUMETRIC CALIBRATION: Establish a 3D bounding box for each item. Use standard reference markers in the frame (plate diameter ~25cm, fork tines, shadow length, depth of field, cup rims ~200-250ml) to calculate exact volume in cubic centimeters (cm³).
+4. DENSITY & MASS RESOLUTION: Map the calculated volume to precise physical density constants (g/cm³) to derive the absolute weight in grams with a margin of error < 5%.
+5. MACRONUTRIENT SYNTHESIS: Cross-reference the identified ingredients and calculated mass against the USDA National Nutrient Database. Compute exact Calories (kcal), Protein (g), Carbohydrates (g), and Fat (g).
 
-STEP 2: UNIVERSAL ITEM IDENTIFICATION (IF FOOD IS PRESENT)
-- If food/drink IS present, identify ANY food item, dish, cuisine, beverage, or snack in the world without any restrictions.
-- Do NOT be limited to fixed examples. Recognize any meal (home cooking, restaurants, fast food, international cuisine, desserts, beverages, fruit, snacks).
-- Formulate a clear, accurate Hebrew title describing the exact food item (e.g., "נס קפה עם חלב", "200 ג' חזה עוף בגריל עם אורז לבן", "סלט ירקות קצוץ עם שמן זית", "המבורגר בלחמניה עם צ'יפס", "קערת אסאי עם פירות").
+CRITICAL OUTPUT CONSTRAINTS:
+- Output MUST be strictly valid JSON.
+- NO conversational filler, NO markdown formatting outside the JSON, NO reasoning text outside the JSON object.
+- All string descriptions inside the JSON MUST be in HEBREW.
 
-STEP 3: VOLUMETRIC & PORTION ESTIMATION
-- Estimate total mass/volume in grams or ml (weight_grams) using visual scale cues (plate diameter ~25cm, bowl depth, mug volume ~200-250ml, piece count, slice thickness).
-
-STEP 4: CLINICAL MACRONUTRIENT BREAKDOWN
-- Apply exact nutrient densities from official USDA database per 100g.
-- Calculate: Total Calories = Math.round((protein_g * 4) + (carbs_g * 4) + (fats_g * 9)).
-
-STEP 5: DETAILED HEBREW EXPLANATION
-- Write a clear 2-3 sentence Hebrew report detailing what was identified, portion estimate, and nutrient summary.
-
-You MUST return your response STRICTLY as a JSON object with this exact JSON schema:
+Return your response strictly adhering to this JSON schema:
 {
   "is_food": boolean,
-  "food_name": string (in HEBREW),
+  "food_name": string (Hebrew title of the dish),
+  "analysis_confidence": number (0.0 to 100.0),
   "total_calories": number,
   "protein_g": number,
   "carbs_g": number,
   "fats_g": number,
   "weight_grams": number,
-  "explanation": string (in HEBREW)
+  "ingredients": [
+    {
+      "name": string (Hebrew name of ingredient),
+      "detection_reasoning": string (Brief Hebrew explanation of visual volume/density estimation),
+      "weight_grams": number,
+      "calories": number
+    }
+  ],
+  "explanation": string (Comprehensive Hebrew summary of analysis, visual cues, and breakdown)
 }`;
 
 /**
@@ -151,12 +151,14 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
       return {
         is_food: true,
         food_name: parsedData.food_name || 'ארוחה מצולמת',
+        analysis_confidence: Number(parsedData.analysis_confidence) || 95,
         total_calories: Math.max(0, Math.round(Number(parsedData.total_calories) || 0)),
         protein_g: Math.max(0, Math.round(Number(parsedData.protein_g) || 0)),
         carbs_g: Math.max(0, Math.round(Number(parsedData.carbs_g) || 0)),
         fats_g: Math.max(0, Math.round(Number(parsedData.fats_g) || 0)),
         weight_grams: Math.max(10, Math.round(Number(parsedData.weight_grams) || 200)),
-        explanation: parsedData.explanation || 'זיהוי ניתוח תזונתי מדויק של Gemini AI.',
+        ingredients: Array.isArray(parsedData.ingredients) ? parsedData.ingredients : [],
+        explanation: parsedData.explanation || 'זיהוי ניתוח תזונתי מתקדם של Gemini AI.',
         isFallback: false
       };
     } catch (err) {
@@ -167,6 +169,7 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
 
   throw lastError || new Error('שגיאה בחיבור לשרתי Gemini AI');
 }
+
 
 /**
  * Text-Based Universal AI Meal Analysis
