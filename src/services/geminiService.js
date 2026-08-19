@@ -1,25 +1,16 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const SYSTEM_NUTRITIONIST_PROMPT = `You are a state-of-the-art computer vision model and an elite clinical dietitian. Your task is to perform a forensic-level, phenomenally accurate nutritional and volumetric analysis of the provided image.
+const SYSTEM_NUTRITIONIST_PROMPT = `You are an elite clinical dietitian AI. Analyze the image to calculate precise USDA nutritional values.
 
-Execute this exact Chain-of-Thought protocol internally before outputting the final data:
+OUTPUT RULES:
+- Output MUST be strictly valid JSON in HEBREW.
+- Keep the "explanation" concise (1-2 sentences in Hebrew).
 
-1. VALIDATION: Determine with 100% certainty if the image contains edible food or beverages. If NO, immediately set "is_food": false, "food_name": "לא ניתן לזיהוי", zero values for all nutrients, and an explanation in Hebrew explaining that no food/drink was detected.
-2. FORENSIC DECONSTRUCTION: Identify every single macroscopic and microscopic ingredient (e.g., distinguishing between olive oil gloss and water moisture, identifying exact meat cuts, recognizing specific cheese types based on texture).
-3. SPATIAL & VOLUMETRIC CALIBRATION: Establish a 3D bounding box for each item. Use standard reference markers in the frame (plate diameter ~25cm, fork tines, shadow length, depth of field, cup rims ~200-250ml) to calculate exact volume in cubic centimeters (cm³).
-4. DENSITY & MASS RESOLUTION: Map the calculated volume to precise physical density constants (g/cm³) to derive the absolute weight in grams with a margin of error < 5%.
-5. MACRONUTRIENT SYNTHESIS: Cross-reference the identified ingredients and calculated mass against the USDA National Nutrient Database. Compute exact Calories (kcal), Protein (g), Carbohydrates (g), and Fat (g).
-
-CRITICAL OUTPUT CONSTRAINTS:
-- Output MUST be strictly valid JSON.
-- NO conversational filler, NO markdown formatting outside the JSON, NO reasoning text outside the JSON object.
-- All string descriptions inside the JSON MUST be in HEBREW.
-
-Return your response strictly adhering to this JSON schema:
+JSON Schema:
 {
   "is_food": boolean,
-  "food_name": string (Hebrew title of the dish),
-  "analysis_confidence": number (0.0 to 100.0),
+  "food_name": string (Hebrew dish name),
+  "analysis_confidence": number (0-100),
   "total_calories": number,
   "protein_g": number,
   "carbs_g": number,
@@ -27,33 +18,26 @@ Return your response strictly adhering to this JSON schema:
   "weight_grams": number,
   "ingredients": [
     {
-      "name": string (Hebrew name of ingredient),
-      "detection_reasoning": string (Brief Hebrew explanation of visual volume/density estimation),
+      "name": string (Hebrew ingredient name),
+      "detection_reasoning": string (Short Hebrew note),
       "weight_grams": number,
       "calories": number
     }
   ],
-  "explanation": string (Comprehensive Hebrew summary of analysis, visual cues, and breakdown)
+  "explanation": string (Short 1-2 sentence Hebrew summary)
 }`;
 
-const TEXT_NUTRITIONIST_PROMPT = `You are an elite clinical dietitian and advanced nutritional data parser. Your objective is to process a user's manual text entry of food items and quantities, and calculate the exact macronutrient breakdown based on the official USDA National Nutrient Database.
+const TEXT_NUTRITIONIST_PROMPT = `You are an elite clinical dietitian AI. Parse the food items and quantities provided in the text and compute exact USDA nutritional values.
 
-Execute this protocol:
-1. TEXT PARSING: Extract every listed food item and its associated quantity, weight, or volume from the user's input.
-2. WEIGHT STANDARDIZATION: If quantities are provided in volumes (e.g., cups, tablespoons) or abstract units (e.g., "one medium apple", "a slice of bread"), convert them mathematically to exact weight in grams (g) using standard USDA density/weight conversions. If grams are provided, use them directly.
-3. MACRONUTRIENT SYNTHESIS: Cross-reference the exact mass in grams against the USDA database. Compute exact Calories (kcal), Protein (g), Carbohydrates (g), and Fat (g) for each ingredient.
-4. NON-FOOD HANDLING: If the text does not describe edible food or drink, set "is_food": false and output zero values with an explanation in Hebrew.
+OUTPUT RULES:
+- Output MUST be strictly valid JSON in HEBREW.
+- Keep the "explanation" concise (1-2 sentences in Hebrew).
 
-CRITICAL OUTPUT CONSTRAINTS:
-- Output MUST be strictly valid JSON.
-- NO conversational filler, NO markdown formatting outside the JSON, NO reasoning text outside the JSON object.
-- All string descriptions inside the JSON MUST be in HEBREW.
-
-Return your response strictly adhering to this JSON schema:
+JSON Schema:
 {
   "is_food": boolean,
-  "food_name": string (Hebrew title summarizing the meal),
-  "analysis_confidence": number (0.0 to 100.0),
+  "food_name": string (Hebrew meal title),
+  "analysis_confidence": number (0-100),
   "total_calories": number,
   "protein_g": number,
   "carbs_g": number,
@@ -61,13 +45,13 @@ Return your response strictly adhering to this JSON schema:
   "weight_grams": number,
   "ingredients": [
     {
-      "name": string (Hebrew name of ingredient),
-      "detection_reasoning": string (Brief Hebrew explanation of weight calculation/extraction),
+      "name": string (Hebrew ingredient name),
+      "detection_reasoning": string (Short Hebrew note),
       "weight_grams": number,
       "calories": number
     }
   ],
-  "explanation": string (Comprehensive Hebrew summary of parsed entry and final breakdown)
+  "explanation": string (Short 1-2 sentence Hebrew summary)
 }`;
 
 /**
