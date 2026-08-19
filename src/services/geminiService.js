@@ -91,9 +91,6 @@ function cleanAndParseJSON(text) {
   }
 }
 
-/**
- * High-Precision Gemini Vision AI Meal Image Analysis Function
- */
 export async function analyzeMealImage(dataUrl, customApiKey = '') {
   const apiKey = customApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
 
@@ -113,8 +110,11 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
+        systemInstruction: SYSTEM_NUTRITIONIST_PROMPT,
         generationConfig: {
-          temperature: 0.1,
+          temperature: 0.0,
+          topP: 0.1,
+          topK: 1,
           responseMimeType: 'application/json'
         }
       });
@@ -126,7 +126,7 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
         }
       };
 
-      const result = await model.generateContent([SYSTEM_NUTRITIONIST_PROMPT, imagePart]);
+      const result = await model.generateContent([imagePart]);
       const response = await result.response;
       const textOutput = response.text();
 
@@ -170,7 +170,6 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
   throw lastError || new Error('שגיאה בחיבור לשרתי Gemini AI');
 }
 
-
 /**
  * Text-Based Universal AI Meal Analysis
  */
@@ -186,7 +185,6 @@ export async function analyzeMealText(foodName, weightGrams = 100, customApiKey 
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const modelNames = ['gemini-2.0-flash'];
-  const prompt = `You are a clinical dietitian. Analyze "${foodName}" for EXACTLY ${requestedWeight} grams. Identify the exact food, ingredient or drink item and name it in HEBREW. Apply USDA nutrient densities per 100g. Return strictly JSON: { "food_name": string (HEBREW), "total_calories": number, "protein_g": number, "carbs_g": number, "fats_g": number, "weight_grams": number, "explanation": string (HEBREW) }. Notice: weight_grams MUST be equal to ${requestedWeight}.`;
 
   let lastError = null;
 
@@ -194,11 +192,15 @@ export async function analyzeMealText(foodName, weightGrams = 100, customApiKey 
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
+        systemInstruction: SYSTEM_NUTRITIONIST_PROMPT,
         generationConfig: {
-          temperature: 0.1,
+          temperature: 0.0,
+          topP: 0.1,
+          topK: 1,
           responseMimeType: 'application/json'
         }
       });
+      const prompt = `Analyze "${foodName}" for EXACTLY ${requestedWeight} grams or ml. Identify the item and calculate exact USDA nutrients. Ensure weight_grams equals ${requestedWeight}.`;
       const result = await model.generateContent([prompt]);
       const response = await result.response;
       const textOutput = response.text();
@@ -223,6 +225,7 @@ export async function analyzeMealText(foodName, weightGrams = 100, customApiKey 
 
   throw lastError || new Error('שגיאה בחיבור לשרתי Gemini AI');
 }
+
 
 
 
