@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChefHat, Check, Plus, Search, Utensils, Dumbbell, Sparkles, Flame, Wheat, PieChart, Star, CheckCircle2 } from 'lucide-react';
+import { ChefHat, Check, Plus, Search, Utensils, Dumbbell, Sparkles, Flame, Wheat, PieChart, Star, CheckCircle2, Wand2, AlertCircle } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
+import { analyzeMealText } from '../services/geminiService';
 
 export const PRESET_MEALS_DATABASE = {
   cut: [
@@ -78,15 +79,19 @@ export default function MyMealPlanPage() {
   const [addedMealIds, setAddedMealIds] = useState({});
   const [customPresets, setCustomPresets] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isCalculatingAi, setIsCalculatingAi] = useState(false);
+  const [calcError, setCalcError] = useState('');
+  const [showManualFields, setShowManualFields] = useState(false);
+
   const [newPresetForm, setNewPresetForm] = useState({
     food_name: '',
     category: 'lunch',
     weight_grams: 200,
-    total_calories: 350,
-    protein_g: 30,
-    carbs_g: 30,
-    fats_g: 10,
-    explanation: 'ארוחה מותאמת אישית בתפריט שלי'
+    total_calories: '',
+    protein_g: '',
+    carbs_g: '',
+    fats_g: '',
+    explanation: ''
   });
 
   const currentGoal = userProfile.goal || 'cut';
@@ -125,32 +130,63 @@ export default function MyMealPlanPage() {
     }));
   };
 
-  const handleSaveCustomPreset = (e) => {
+  const handleSaveCustomPreset = async (e) => {
     e.preventDefault();
     if (!newPresetForm.food_name.trim()) return;
 
-    const newPreset = {
-      ...newPresetForm,
-      id: 'custom_preset_' + Date.now(),
-      weight_grams: Number(newPresetForm.weight_grams) || 200,
-      total_calories: Number(newPresetForm.total_calories) || 0,
-      protein_g: Number(newPresetForm.protein_g) || 0,
-      carbs_g: Number(newPresetForm.carbs_g) || 0,
-      fats_g: Number(newPresetForm.fats_g) || 0
-    };
+    const requestedWeight = Number(newPresetForm.weight_grams) > 0 ? Number(newPresetForm.weight_grams) : 200;
 
-    setCustomPresets([newPreset, ...customPresets]);
-    setIsAddModalOpen(false);
-    setNewPresetForm({
-      food_name: '',
-      category: 'lunch',
-      weight_grams: 200,
-      total_calories: 350,
-      protein_g: 30,
-      carbs_g: 30,
-      fats_g: 10,
-      explanation: 'ארוחה מותאמת אישית בתפריט שלי'
-    });
+    // If user filled manual values, save directly:
+    if (showManualFields && newPresetForm.total_calories) {
+      const newPreset = {
+        id: 'custom_preset_' + Date.now(),
+        category: newPresetForm.category,
+        food_name: newPresetForm.food_name.trim(),
+        weight_grams: requestedWeight,
+        total_calories: Number(newPresetForm.total_calories) || 0,
+        protein_g: Number(newPresetForm.protein_g) || 0,
+        carbs_g: Number(newPresetForm.carbs_g) || 0,
+        fats_g: Number(newPresetForm.fats_g) || 0,
+        explanation: newPresetForm.explanation || `ארוחה מותאמת אישית בתפריט שלי (${requestedWeight}ג')`
+      };
+
+      setCustomPresets([newPreset, ...customPresets]);
+      setIsAddModalOpen(false);
+      setNewPresetForm({ food_name: '', category: 'lunch', weight_grams: 200, total_calories: '', protein_g: '', carbs_g: '', fats_g: '', explanation: '' });
+      setShowManualFields(false);
+      return;
+    }
+
+    // Otherwise: Automatic calculation with Gemini AI!
+    setIsCalculatingAi(true);
+    setCalcError('');
+
+    try {
+      const res = await analyzeMealText(newPresetForm.food_name.trim(), requestedWeight);
+
+      const newPreset = {
+        id: 'custom_preset_' + Date.now(),
+        category: newPresetForm.category,
+        food_name: res.food_name || newPresetForm.food_name.trim(),
+        weight_grams: requestedWeight,
+        total_calories: res.total_calories || 0,
+        protein_g: res.protein_g || 0,
+        carbs_g: res.carbs_g || 0,
+        fats_g: res.fats_g || 0,
+        explanation: res.explanation || `חישוב אוטומטי מ-Gemini AI (${requestedWeight}ג')`
+      };
+
+      setCustomPresets([newPreset, ...customPresets]);
+      setIsAddModalOpen(false);
+      setNewPresetForm({ food_name: '', category: 'lunch', weight_grams: 200, total_calories: '', protein_g: '', carbs_g: '', fats_g: '', explanation: '' });
+      setShowManualFields(false);
+    } catch (err) {
+      console.error(err);
+      setCalcError(err.message || 'חישוב הקלוריות ב-AI נכשל. נסה שנית או הזן ידנית.');
+      setShowManualFields(true);
+    } finally {
+      setIsCalculatingAi(false);
+    }
   };
 
   return (
@@ -176,7 +212,10 @@ export default function MyMealPlanPage() {
           </div>
 
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setCalcError('');
+              setIsAddModalOpen(true);
+            }}
             className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-bold text-xs border border-purple-500/30 flex items-center justify-center gap-1.5 shrink-0 transition-colors"
           >
             <Plus className="w-4 h-4" /> הוסף ארוחה קבועה לתפריט שלי
@@ -266,104 +305,155 @@ export default function MyMealPlanPage() {
         })}
       </section>
 
-      {/* Add Custom Preset Modal */}
+      {/* Add Custom Preset Modal with Automatic AI Calculation */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
           <div className="w-full max-w-md glass-panel rounded-3xl p-6 text-white border border-slate-700 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Plus className="w-5 h-5 text-purple-400" /> הוספת ארוחה קבועה לתפריט שלי
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <Wand2 className="w-5 h-5 text-purple-400 animate-pulse" /> הוספת ארוחה קבועה (חישוב AI אוטומטי)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-slate-400 hover:text-white text-xs"
+              >
+                ✕
+              </button>
+            </div>
 
-            <form onSubmit={handleSaveCustomPreset} className="space-y-3">
+            <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs flex items-center gap-2">
+              <Sparkles className="w-4 h-4 shrink-0 text-purple-400" />
+              <span>הזן רק שם ומשקל - Gemini AI יחשב עבורך אוטומטית את כל הקלוריות והמאקרו!</span>
+            </div>
+
+            <form onSubmit={handleSaveCustomPreset} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">שם הארוחה</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">שם המאכל / הארוחה</label>
                 <input
                   type="text"
-                  placeholder="למשל: סלט חזה עוף ואבוקדו"
+                  placeholder="למשל: שקשוקה 2 ביצים עם לחם קל"
                   value={newPresetForm.food_name}
                   onChange={(e) => setNewPresetForm({ ...newPresetForm, food_name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs font-bold focus:border-purple-400"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">קטגוריה</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">משקל מנה (גרם / מ"ל)</label>
+                  <input
+                    type="number"
+                    placeholder="200"
+                    value={newPresetForm.weight_grams}
+                    onChange={(e) => setNewPresetForm({ ...newPresetForm, weight_grams: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs font-bold focus:border-purple-400"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">קטגוריה בתפריט</label>
                   <select
                     value={newPresetForm.category}
                     onChange={(e) => setNewPresetForm({ ...newPresetForm, category: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-900 text-xs font-bold text-white border border-slate-800"
                   >
-                    <option value="breakfast">ארוחת בוקר</option>
-                    <option value="lunch">ארוחת צהריים</option>
-                    <option value="dinner">ארוחת ערב</option>
-                    <option value="snack">נשנוש / ביניים</option>
+                    <option value="breakfast">🥣 ארוחת בוקר</option>
+                    <option value="lunch">🥗 ארוחת צהריים</option>
+                    <option value="dinner">🍲 ארוחת ערב</option>
+                    <option value="snack">🍎 נשנוש / ביניים</option>
                   </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">משקל (גרם/מ"ל)</label>
-                  <input
-                    type="number"
-                    value={newPresetForm.weight_grams}
-                    onChange={(e) => setNewPresetForm({ ...newPresetForm, weight_grams: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl glass-input text-xs font-bold"
-                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">קלוריות</label>
-                  <input
-                    type="number"
-                    value={newPresetForm.total_calories}
-                    onChange={(e) => setNewPresetForm({ ...newPresetForm, total_calories: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-emerald-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">חלבון</label>
-                  <input
-                    type="number"
-                    value={newPresetForm.protein_g}
-                    onChange={(e) => setNewPresetForm({ ...newPresetForm, protein_g: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-indigo-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">פחמימות</label>
-                  <input
-                    type="number"
-                    value={newPresetForm.carbs_g}
-                    onChange={(e) => setNewPresetForm({ ...newPresetForm, carbs_g: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-amber-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">שומנים</label>
-                  <input
-                    type="number"
-                    value={newPresetForm.fats_g}
-                    onChange={(e) => setNewPresetForm({ ...newPresetForm, fats_g: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-rose-400"
-                  />
-                </div>
+              {/* Optional Manual Overrides */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowManualFields(!showManualFields)}
+                  className="text-[11px] font-bold text-purple-400 hover:underline flex items-center gap-1"
+                >
+                  <span>{showManualFields ? 'הסתר הזנה ידנית' : 'הזן קלוריות וערכים ידנית (אופציונלי)'}</span>
+                </button>
               </div>
+
+              {showManualFields && (
+                <div className="grid grid-cols-4 gap-2 text-center pt-1 bg-slate-900/60 p-2.5 rounded-2xl border border-slate-800">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">קלוריות</label>
+                    <input
+                      type="number"
+                      placeholder="350"
+                      value={newPresetForm.total_calories}
+                      onChange={(e) => setNewPresetForm({ ...newPresetForm, total_calories: e.target.value })}
+                      className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-emerald-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">חלבון</label>
+                    <input
+                      type="number"
+                      placeholder="30"
+                      value={newPresetForm.protein_g}
+                      onChange={(e) => setNewPresetForm({ ...newPresetForm, protein_g: e.target.value })}
+                      className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-indigo-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">פחמימות</label>
+                    <input
+                      type="number"
+                      placeholder="25"
+                      value={newPresetForm.carbs_g}
+                      onChange={(e) => setNewPresetForm({ ...newPresetForm, carbs_g: e.target.value })}
+                      className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">שומנים</label>
+                    <input
+                      type="number"
+                      placeholder="10"
+                      value={newPresetForm.fats_g}
+                      onChange={(e) => setNewPresetForm({ ...newPresetForm, fats_g: e.target.value })}
+                      className="w-full px-2 py-1.5 rounded-lg glass-input text-xs text-center font-bold text-rose-400"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {calcError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{calcError}</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
                 >
                   ביטול
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md"
+                  disabled={isCalculatingAi}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white text-xs font-extrabold shadow-md flex items-center gap-2 disabled:opacity-50"
                 >
-                  שמור לתפריט שלי
+                  {isCalculatingAi ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>Gemini AI מחשב קלוריות וערכים...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 text-purple-200" />
+                      <span>חשב ב-AI ושמור לתפריט שלי</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
