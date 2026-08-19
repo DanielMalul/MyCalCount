@@ -469,13 +469,41 @@ export const useFitnessStore = create(
       setSteps: (count) => set({ steps: Math.max(0, count) }),
       setStepTarget: (target) => set({ stepTarget: target }),
 
+      // Workouts & Exercise Tracking
+      loggedWorkouts: [],
+      addWorkout: (workout) => {
+        const dateStr = get().selectedDate || getTodayString();
+        const newWorkout = {
+          id: 'workout_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          date: dateStr,
+          timestamp: new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+          name: workout.name || 'אימון',
+          burned_calories: Math.max(0, Number(workout.burned_calories) || 0),
+          duration_minutes: Math.max(5, Number(workout.duration_minutes) || 30),
+          type: workout.type || 'fitness',
+          explanation: workout.explanation || ''
+        };
+
+        set((state) => ({
+          loggedWorkouts: [newWorkout, ...state.loggedWorkouts],
+          userXp: (state.userXp || 0) + 100 // +100 XP Bonus for working out!
+        }));
+      },
+
+      deleteWorkout: (id) => {
+        set((state) => ({
+          loggedWorkouts: state.loggedWorkouts.filter((w) => w.id !== id)
+        }));
+      },
+
       // Metrics Calculators for Selected Date
       getDailyTotals: () => {
         const state = get();
         const targetDate = state.selectedDate;
         const daysMeals = state.loggedMeals.filter((m) => m.date === targetDate);
+        const daysWorkouts = (state.loggedWorkouts || []).filter((w) => w.date === targetDate);
 
-        return daysMeals.reduce(
+        const totals = daysMeals.reduce(
           (acc, meal) => {
             acc.calories += meal.total_calories;
             acc.protein += meal.protein_g;
@@ -485,6 +513,12 @@ export const useFitnessStore = create(
           },
           { calories: 0, protein: 0, carbs: 0, fats: 0 }
         );
+
+        const burnedCalories = daysWorkouts.reduce((acc, w) => acc + (Number(w.burned_calories) || 0), 0);
+        totals.burnedCalories = burnedCalories;
+        totals.netCalories = Math.max(0, totals.calories - burnedCalories);
+
+        return totals;
       }
     }),
     {

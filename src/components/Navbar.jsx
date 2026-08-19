@@ -1,8 +1,8 @@
 import React from 'react';
-import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn, Home, ChefHat, BookOpen } from 'lucide-react';
+import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn, Home, ChefHat, BookOpen, Bell, Dumbbell } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function Navbar({ activeTab = 'dashboard', setActiveTab, onOpenProfileModal, onOpenAuthModal }) {
+export default function Navbar({ activeTab = 'dashboard', setActiveTab, onOpenProfileModal, onOpenAuthModal, onOpenNotifications, onOpenWorkouts }) {
   const selectedDate = useFitnessStore((state) => state.selectedDate);
   const setSelectedDate = useFitnessStore((state) => state.setSelectedDate);
   const user = useFitnessStore((state) => state.user);
@@ -134,9 +134,29 @@ export default function Navbar({ activeTab = 'dashboard', setActiveTab, onOpenPr
           )}
         </div>
 
-
-        {/* User Auth & Profile Actions */}
+        {/* User Actions & Quick Modals */}
         <div className="flex items-center space-x-1 sm:space-x-2 space-x-reverse shrink-0">
+          {onOpenWorkouts && (
+            <button
+              onClick={onOpenWorkouts}
+              className="p-1.5 sm:p-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-colors"
+              title="מחשבון אימונים"
+            >
+              <Dumbbell className="w-4 h-4" />
+            </button>
+          )}
+
+          {onOpenNotifications && (
+            <button
+              onClick={onOpenNotifications}
+              className="p-1.5 sm:p-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 transition-colors relative"
+              title="מרכז התראות AI"
+            >
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            </button>
+          )}
+
           {user ? (
             <div className="flex items-center space-x-1 space-x-reverse">
               <button

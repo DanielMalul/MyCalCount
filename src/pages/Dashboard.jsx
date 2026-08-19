@@ -38,6 +38,8 @@ import FitnessAvatarWidget from '../components/FitnessAvatarWidget';
 import AiCoachModal from '../components/AiCoachModal';
 import FridgeRecipeModal from '../components/FridgeRecipeModal';
 import AchievementBadgesModal from '../components/AchievementBadgesModal';
+import WorkoutTrackerModal from '../components/WorkoutTrackerModal';
+import NotificationCenterModal from '../components/NotificationCenterModal';
 
 export default function Dashboard() {
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -60,6 +62,8 @@ export default function Dashboard() {
   const [isAiCoachOpen, setIsAiCoachOpen] = useState(false);
   const [isFridgeRecipeOpen, setIsFridgeRecipeOpen] = useState(false);
   const [isBadgesOpen, setIsBadgesOpen] = useState(false);
+  const [isWorkoutOpen, setIsWorkoutOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Inline calorie target editing state
   const [isEditingTarget, setIsEditingTarget] = useState(false);
@@ -116,6 +120,8 @@ export default function Dashboard() {
         setActiveTab={setActiveTab}
         onOpenProfileModal={() => setIsOnboardingOpen(true)}
         onOpenAuthModal={() => setIsAuthOpen(true)}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
+        onOpenWorkouts={() => setIsWorkoutOpen(true)}
       />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 sm:pt-6 space-y-4 sm:space-y-6">
@@ -282,14 +288,20 @@ export default function Dashboard() {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
                 <div className="space-y-1 text-center sm:text-right">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-1">
-                    <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות, מקרר ומנטור AI
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" /> סורק ארוחות, מקרר, אימונים ומנטור AI
                   </div>
-                  <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה, מקרר או התייעץ ב-AI</h2>
+                  <h2 className="text-base sm:text-xl font-bold text-white">סרוק ארוחה, מקרר, אימון או התייעץ ב-AI</h2>
                   <p className="text-xs text-slate-300 max-w-md">
-                    צלם ארוחה לניתוח, המצא מתכון ממה שיש בבית, חולל 3 אופציות, או התייעץ בלייב עם המאמן.
+                    צלם ארוחה לניתוח, חשב שריפה מאימון, המצא מתכון ממה שיש בבית, או התייעץ במאמן.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 justify-center sm:justify-end">
+                  <button
+                    onClick={() => setIsWorkoutOpen(true)}
+                    className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Dumbbell className="w-4 h-4 text-purple-200" /> סרוק/חשב אימון
+                  </button>
                   <button
                     onClick={() => setIsFridgeRecipeOpen(true)}
                     className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
@@ -298,9 +310,9 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => setIsAiCoachOpen(true)}
-                    className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+                    className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <Bot className="w-4 h-4 text-purple-200" /> מאמן AI (24/7)
+                    <Bot className="w-4 h-4 text-indigo-200" /> מאמן AI
                   </button>
                   <button
                     onClick={() => setIsScannerOpen(true)}
@@ -404,6 +416,14 @@ export default function Dashboard() {
       <AchievementBadgesModal
         isOpen={isBadgesOpen}
         onClose={() => setIsBadgesOpen(false)}
+      />
+      <WorkoutTrackerModal
+        isOpen={isWorkoutOpen}
+        onClose={() => setIsWorkoutOpen(false)}
+      />
+      <NotificationCenterModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
       />
       <OnboardingModal isOpen={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

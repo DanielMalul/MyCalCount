@@ -91,7 +91,7 @@ async function getBase64FromUrlOrDataUrl(inputUrl) {
 /**
  * Parses Gemini response text cleanly, removing markdown codeblocks
  */
-function cleanAndParseJSON(text) {
+export function cleanAndParseJSON(text) {
   let cleanText = text.trim();
   
   if (cleanText.startsWith('```')) {
