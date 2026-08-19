@@ -135,7 +135,7 @@ export async function analyzeMealImage(dataUrl) {
   const { base64Data, mimeType } = await getBase64FromUrlOrDataUrl(dataUrl);
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.6-flash', 'gemini-2.5-flash'];
+  const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash'];
   let lastError = null;
 
   for (const modelName of modelNames) {
@@ -214,7 +214,7 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.6-flash', 'gemini-2.5-flash'];
+  const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash'];
 
   let lastError = null;
 
