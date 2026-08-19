@@ -106,7 +106,7 @@ export async function analyzeMealImage(dataUrl, customApiKey = '') {
   const { base64Data, mimeType } = await getBase64FromUrlOrDataUrl(dataUrl);
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  const modelNames = ['gemini-2.0-flash'];
   let lastError = null;
 
   for (const modelName of modelNames) {
@@ -185,7 +185,7 @@ export async function analyzeMealText(foodName, weightGrams = 100, customApiKey 
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  const modelNames = ['gemini-2.0-flash'];
   const prompt = `You are a clinical dietitian. Analyze "${foodName}" for EXACTLY ${requestedWeight} grams. Identify the exact food, ingredient or drink item and name it in HEBREW. Apply USDA nutrient densities per 100g. Return strictly JSON: { "food_name": string (HEBREW), "total_calories": number, "protein_g": number, "carbs_g": number, "fats_g": number, "weight_grams": number, "explanation": string (HEBREW) }. Notice: weight_grams MUST be equal to ${requestedWeight}.`;
 
   let lastError = null;
