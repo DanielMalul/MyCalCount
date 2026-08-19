@@ -186,6 +186,12 @@ export const useFitnessStore = create(
       steps: 0,
       stepTarget: 10000,
 
+      // Persisted AI Meal Plan Options & Custom Staples
+      savedMealOptions: null,
+      setSavedMealOptions: (options) => set({ savedMealOptions: options }),
+      savedCustomMeals: [],
+      setSavedCustomMeals: (meals) => set({ savedCustomMeals: meals }),
+
       // Initialize Firebase Auth Listener & Fetch User Cloud Data in Real-Time
       initAuthListener: () => {
         if (!isFirebaseConfigured || !auth) return;
