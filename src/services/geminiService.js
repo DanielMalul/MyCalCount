@@ -343,6 +343,92 @@ Ensure exactly ${mealCount} meals. Return valid JSON only in Hebrew according to
   throw lastError || new Error('שגיאה ביצירת תפריט מ-Gemini AI');
 }
 
+/**
+ * AI 3-Options Per Meal Type Generator for "התפריט שלי"
+ */
+const THREE_OPTIONS_MEAL_PLANNER_PROMPT = `You are an elite sports nutritionist. Generate EXACTLY 3 distinct, delicious, realistic meal options for EACH of the 4 meal times of the day (Breakfast, Lunch, Dinner, Snack).
+Total 12 options (3 Breakfast, 3 Lunch, 3 Dinner, 3 Snack).
+
+OUTPUT RULES:
+- Output MUST be strictly valid JSON in HEBREW.
+- Each meal option must specify realistic macros (calories, protein, carbs, fats) appropriate for that meal time.
+
+JSON Schema:
+{
+  "plan_title": string (Hebrew title e.g. "תפריט AI אישי - 3 אופציות לכל ארוחה"),
+  "summary_note": string (Hebrew guidance note),
+  "breakfast_options": [
+    {
+      "id": string (e.g. "b1"),
+      "category": "breakfast",
+      "option_title": string (e.g. "אופציה 1: חלבונית ומהירה"),
+      "food_name": string (Hebrew dish name),
+      "weight_grams": number,
+      "total_calories": number,
+      "protein_g": number,
+      "carbs_g": number,
+      "fats_g": number,
+      "explanation": string
+    }
+  ],
+  "lunch_options": [... 3 items with category "lunch"],
+  "dinner_options": [... 3 items with category "dinner"],
+  "snack_options": [... 3 items with category "snack"]
+}`;
+
+export async function generateAi3OptionsMealPlan({ userProfile, dailyTargets, preferences = {} }) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('מפתח Gemini API חסר בקוד. נא להגדיר VITE_GEMINI_API_KEY בקובץ ה-env.');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+  let lastError = null;
+
+  const goalText = userProfile?.goal === 'cut' ? 'חיטוב وشריפת שומן' : userProfile?.goal === 'bulk' ? 'עלייה במסת שריר' : 'שמירה על משקל';
+  const dietaryPref = preferences.diet || 'ללא הגבלה (כשר/רגיל)';
+  const notes = preferences.notes || '';
+
+  const prompt = `Create a 3-options-per-meal-type daily plan for a user with the following targets:
+- Goal: ${goalText}
+- Target Daily Calories: ${dailyTargets.targetCalories} kcal (Breakfast ~30%, Lunch ~35%, Dinner ~25%, Snack ~10%)
+- Target Daily Protein: ${dailyTargets.proteinGrams}g
+- Target Daily Carbs: ${dailyTargets.carbGrams}g
+- Target Daily Fats: ${dailyTargets.fatGrams}g
+- Dietary preference: ${dietaryPref}
+- Special requests: ${notes}
+
+Ensure EXACTLY 3 distinct options for breakfast_options, 3 for lunch_options, 3 for dinner_options, 3 for snack_options (total 12 options). Return valid JSON in Hebrew according to schema.`;
+
+  for (const modelName of modelNames) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: THREE_OPTIONS_MEAL_PLANNER_PROMPT,
+        generationConfig: {
+          temperature: 0.3,
+          topP: 0.8,
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const result = await model.generateContent([prompt]);
+      const response = await result.response;
+      const textOutput = response.text();
+
+      return cleanAndParseJSON(textOutput);
+    } catch (err) {
+      console.warn(`3-Options Meal plan model ${modelName} failed, trying next...`, err);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('שגיאה ביצירת תפריט 3 אופציות מ-Gemini AI');
+}
+
+
 
 
 

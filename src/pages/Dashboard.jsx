@@ -277,7 +277,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
                   <button
-                    onClick={() => setIsMealPlanOpen(true)}
+                    onClick={() => setActiveTab('menu')}
                     className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs sm:text-sm shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
                   >
                     <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-purple-200" /> מחולל תפריט AI
