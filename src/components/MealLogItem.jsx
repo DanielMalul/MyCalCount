@@ -10,33 +10,41 @@ export default function MealLogItem({ meal }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     food_name: meal.food_name,
-    weight_grams: meal.weight_grams || 200,
+    portion_amount: meal.portion_amount || '1',
+    portion_unit: meal.portion_unit || 'יחידות',
+    weight_grams: meal.weight_grams || 100,
     total_calories: meal.total_calories || 0,
     protein_g: meal.protein_g || 0,
     carbs_g: meal.carbs_g || 0,
     fats_g: meal.fats_g || 0
   });
 
-  // Handle Grams Change with proportional Macro Recalculation
-  const handleWeightChange = (newGrams) => {
-    const parsedGrams = Number(newGrams) || 1;
-    const oldGrams = Number(meal.weight_grams) || 1;
-    const ratio = parsedGrams / oldGrams;
+  // Handle Amount Change with proportional Macro Recalculation
+  const handlePortionAmountChange = (newAmount) => {
+    const parsedAmount = Number(newAmount) || 1;
+    const oldAmount = Number(editForm.portion_amount) || 1;
+    const ratio = parsedAmount / oldAmount;
 
     setEditForm({
       ...editForm,
-      weight_grams: parsedGrams,
-      total_calories: Math.round((meal.total_calories || 0) * ratio),
-      protein_g: Math.round((meal.protein_g || 0) * ratio),
-      carbs_g: Math.round((meal.carbs_g || 0) * ratio),
-      fats_g: Math.round((meal.fats_g || 0) * ratio)
+      portion_amount: parsedAmount,
+      weight_grams: Math.round((editForm.weight_grams || 100) * ratio),
+      total_calories: Math.round((editForm.total_calories || 0) * ratio),
+      protein_g: Math.round((editForm.protein_g || 0) * ratio),
+      carbs_g: Math.round((editForm.carbs_g || 0) * ratio),
+      fats_g: Math.round((editForm.fats_g || 0) * ratio)
     });
   };
 
   const handleSave = () => {
+    const amount = Number(editForm.portion_amount) || 1;
+    const unit = editForm.portion_unit || 'יחידות';
     updateMeal(meal.id, {
       food_name: editForm.food_name,
-      weight_grams: Number(editForm.weight_grams),
+      portion_amount: amount,
+      portion_unit: unit,
+      portion_display: `${amount} ${unit}`,
+      weight_grams: Number(editForm.weight_grams) || 100,
       total_calories: Number(editForm.total_calories),
       protein_g: Number(editForm.protein_g),
       carbs_g: Number(editForm.carbs_g),
@@ -75,9 +83,10 @@ export default function MealLogItem({ meal }) {
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3 text-cyan-400" /> {meal.timestamp}
             </span>
-            {meal.weight_grams && (
-              <span className="flex items-center gap-1">
-                <Weight className="w-3 h-3 text-slate-400" /> {meal.weight_grams} גרם
+            {(meal.portion_display || meal.weight_grams) && (
+              <span className="flex items-center gap-1 font-semibold text-cyan-300">
+                <Scale className="w-3 h-3 text-cyan-400" />
+                {meal.portion_display || `${meal.weight_grams} גרם`}
               </span>
             )}
           </div>
@@ -100,14 +109,26 @@ export default function MealLogItem({ meal }) {
         </div>
       </div>
 
-      {/* Action Buttons: Edit Grams & Delete Meal */}
+      {/* Action Buttons: Edit Portion & Delete Meal */}
       <div className="flex items-center space-x-2 space-x-reverse self-end sm:self-center shrink-0">
         <button
-          onClick={() => setIsEditing(true)}
+          onClick={() => {
+            setEditForm({
+              food_name: meal.food_name,
+              portion_amount: meal.portion_amount || '1',
+              portion_unit: meal.portion_unit || (meal.portion_display ? meal.portion_display.split(' ')[1] : 'יחידות'),
+              weight_grams: meal.weight_grams || 100,
+              total_calories: meal.total_calories || 0,
+              protein_g: meal.protein_g || 0,
+              carbs_g: meal.carbs_g || 0,
+              fats_g: meal.fats_g || 0
+            });
+            setIsEditing(true);
+          }}
           className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 text-xs font-bold border border-slate-700/80 flex items-center gap-1 transition-colors"
-          title="שנה משקל בגרמים או ערכים"
+          title="ערוך כמות מנה או ערכים"
         >
-          <Edit3 className="w-3.5 h-3.5" /> שנה גרמים
+          <Edit3 className="w-3.5 h-3.5" /> ערוך מנה
         </button>
 
         <button
@@ -131,7 +152,7 @@ export default function MealLogItem({ meal }) {
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <Scale className="w-4 h-4 text-cyan-400" /> עריכת ארוחה ושינוי גרמים
+                  <Scale className="w-4 h-4 text-cyan-400" /> עריכת ארוחה וכמות מנה
                 </h3>
                 <button
                   onClick={() => setIsEditing(false)}
@@ -151,18 +172,39 @@ export default function MealLogItem({ meal }) {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-cyan-400 mb-1">
-                  משקל המנה בגרמים (משנה ערכים יחסית)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5000"
-                  value={editForm.weight_grams}
-                  onChange={(e) => handleWeightChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl glass-input text-sm font-black text-cyan-300"
-                />
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-semibold text-cyan-400 mb-1">
+                    כמות מנה (משנה ערכים יחסית)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0.1"
+                    max="5000"
+                    value={editForm.portion_amount}
+                    onChange={(e) => handlePortionAmountChange(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl glass-input text-sm font-black text-cyan-300 text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">
+                    יחידת מידה
+                  </label>
+                  <select
+                    value={editForm.portion_unit}
+                    onChange={(e) => setEditForm({ ...editForm, portion_unit: e.target.value })}
+                    className="w-full px-2 py-2 rounded-xl bg-slate-900 text-xs font-bold text-slate-200 border border-slate-700"
+                  >
+                    <option value="יחידות">🍗 יחידות</option>
+                    <option value="כוסות">🍚 כוסות</option>
+                    <option value="כפות">🥄 כפות</option>
+                    <option value="פרוסות">🍞 פרוסות</option>
+                    <option value="מנות">🍽️ מנות</option>
+                    <option value="גרמים">⚖️ גרמים</option>
+                    <option value="מ''ל">🥤 מ"ל</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-4 gap-2 text-center pt-2 border-t border-slate-800">

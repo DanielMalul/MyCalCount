@@ -35,7 +35,8 @@ export default function MyMealPlanPage() {
   const [newMealForm, setNewMealForm] = useState({
     food_name: '',
     category: 'lunch',
-    weight_grams: 200,
+    portion_amount: '1',
+    portion_unit: 'יחידות',
     total_calories: '',
     protein_g: '',
     carbs_g: '',
@@ -87,7 +88,10 @@ export default function MyMealPlanPage() {
       protein_g: Number(meal.protein_g) || 0,
       carbs_g: Number(meal.carbs_g) || 0,
       fats_g: Number(meal.fats_g) || 0,
-      weight_grams: Number(meal.weight_grams) || 200,
+      weight_grams: Number(meal.weight_grams) || 100,
+      portion_display: meal.portion_display || `${meal.portion_amount || 1} ${meal.portion_unit || 'מנה'}`,
+      portion_amount: meal.portion_amount,
+      portion_unit: meal.portion_unit,
       explanation: `${meal.food_name} (${categoryFilterLabels[meal.category] || 'ארוחה'})`,
       image: null
     });
@@ -103,24 +107,28 @@ export default function MyMealPlanPage() {
     e.preventDefault();
     if (!newMealForm.food_name.trim()) return;
 
-    const requestedWeight = Number(newMealForm.weight_grams) > 0 ? Number(newMealForm.weight_grams) : 200;
+    const amount = Number(newMealForm.portion_amount) > 0 ? Number(newMealForm.portion_amount) : 1;
+    const unit = newMealForm.portion_unit || 'יחידות';
 
     if (showManualFields && newMealForm.total_calories) {
       const newMeal = {
         id: 'custom_' + Date.now(),
         category: newMealForm.category,
         food_name: newMealForm.food_name.trim(),
-        weight_grams: requestedWeight,
+        weight_grams: 100,
+        portion_display: `${amount} ${unit}`,
+        portion_amount: amount,
+        portion_unit: unit,
         total_calories: Number(newMealForm.total_calories) || 0,
         protein_g: Number(newMealForm.protein_g) || 0,
         carbs_g: Number(newMealForm.carbs_g) || 0,
         fats_g: Number(newMealForm.fats_g) || 0,
-        explanation: newMealForm.explanation || `ארוחה אישית (${requestedWeight}ג')`
+        explanation: newMealForm.explanation || `ארוחה אישית (${amount} ${unit})`
       };
 
       setSavedCustomMeals([newMeal, ...savedCustomMeals]);
       setIsAddModalOpen(false);
-      setNewMealForm({ food_name: '', category: 'lunch', weight_grams: 200, total_calories: '', protein_g: '', carbs_g: '', fats_g: '', explanation: '' });
+      setNewMealForm({ food_name: '', category: 'lunch', portion_amount: '1', portion_unit: 'יחידות', total_calories: '', protein_g: '', carbs_g: '', fats_g: '', explanation: '' });
       setShowManualFields(false);
       return;
     }
@@ -129,23 +137,26 @@ export default function MyMealPlanPage() {
     setCalcError('');
 
     try {
-      const res = await analyzeMealText(newMealForm.food_name.trim(), requestedWeight);
+      const res = await analyzeMealText(newMealForm.food_name.trim(), amount, unit);
 
       const newMeal = {
         id: 'custom_' + Date.now(),
         category: newMealForm.category,
         food_name: res.food_name || newMealForm.food_name.trim(),
-        weight_grams: requestedWeight,
+        weight_grams: res.weight_grams || 100,
+        portion_display: res.portion_display || `${amount} ${unit}`,
+        portion_amount: amount,
+        portion_unit: unit,
         total_calories: res.total_calories || 0,
         protein_g: res.protein_g || 0,
         carbs_g: res.carbs_g || 0,
         fats_g: res.fats_g || 0,
-        explanation: res.explanation || `ארוחה אישית מ-Gemini AI (${requestedWeight}ג')`
+        explanation: res.explanation || `ארוחה אישית מ-Gemini AI (${res.portion_display || `${amount} ${unit}`})`
       };
 
       setSavedCustomMeals([newMeal, ...savedCustomMeals]);
       setIsAddModalOpen(false);
-      setNewMealForm({ food_name: '', category: 'lunch', weight_grams: 200, total_calories: '', protein_g: '', carbs_g: '', fats_g: '', explanation: '' });
+      setNewMealForm({ food_name: '', category: 'lunch', portion_amount: '1', portion_unit: 'יחידות', total_calories: '', protein_g: '', carbs_g: '', fats_g: '', explanation: '' });
       setShowManualFields(false);
     } catch (err) {
       console.error(err);
@@ -461,7 +472,7 @@ export default function MyMealPlanPage() {
             </div>
 
             <p className="text-xs text-slate-300">
-              הזן שם ומשקל - Gemini AI יחשב עבורך אוטומטית קלוריות וערכים!
+              הזן שם, כמות ויחידת מידה (יחידות/כוסות/כפות/פרוסות/גרמים) - Gemini AI יחשב עבורך אוטומטית!
             </p>
 
             <form onSubmit={handleSaveCustomMeal} className="space-y-3.5">
@@ -469,7 +480,7 @@ export default function MyMealPlanPage() {
                 <label className="block text-xs font-bold text-slate-300 mb-1">שם המאכל / הארוחה</label>
                 <input
                   type="text"
-                  placeholder="למשל: סלט עוף ואבוקדו"
+                  placeholder="למשל: חזה עוף בגריל / אורז בסמטי / סלט עוף"
                   value={newMealForm.food_name}
                   onChange={(e) => setNewMealForm({ ...newMealForm, food_name: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs font-bold focus:border-purple-400"
@@ -477,29 +488,49 @@ export default function MyMealPlanPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">משקל מנה (גרם / מ"ל)</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">כמות</label>
                   <input
                     type="number"
-                    placeholder="200"
-                    value={newMealForm.weight_grams}
-                    onChange={(e) => setNewMealForm({ ...newMealForm, weight_grams: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs font-bold focus:border-purple-400"
+                    step="0.25"
+                    min="0.1"
+                    placeholder="1"
+                    value={newMealForm.portion_amount}
+                    onChange={(e) => setNewMealForm({ ...newMealForm, portion_amount: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl glass-input text-xs font-bold text-center focus:border-purple-400"
                     required
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">קטגוריה בתפריט</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">יחידת מידה</label>
+                  <select
+                    value={newMealForm.portion_unit}
+                    onChange={(e) => setNewMealForm({ ...newMealForm, portion_unit: e.target.value })}
+                    className="w-full px-2 py-2.5 rounded-xl bg-slate-900 text-xs font-bold text-white border border-slate-800"
+                  >
+                    <option value="יחידות">🍗 יחידות</option>
+                    <option value="כוסות">🍚 כוסות</option>
+                    <option value="כפות">🥄 כפות</option>
+                    <option value="פרוסות">🍞 פרוסות</option>
+                    <option value="מנות">🍽️ מנות</option>
+                    <option value="גרמים">⚖️ גרמים</option>
+                    <option value="מ''ל">🥤 מ"ל</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">קטגוריה</label>
                   <select
                     value={newMealForm.category}
                     onChange={(e) => setNewMealForm({ ...newMealForm, category: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 text-xs font-bold text-white border border-slate-800"
+                    className="w-full px-2 py-2.5 rounded-xl bg-slate-900 text-xs font-bold text-white border border-slate-800"
                   >
-                    <option value="breakfast">🥣 ארוחת בוקר</option>
-                    <option value="lunch">🥗 ארוחת צהריים</option>
-                    <option value="dinner">🍲 ארוחת ערב</option>
-                    <option value="snack">🍎 נשנוש / ביניים</option>
+                    <option value="breakfast">🥣 בוקר</option>
+                    <option value="lunch">🥗 צהריים</option>
+                    <option value="dinner">🍲 ערב</option>
+                    <option value="snack">🍎 נשנוש</option>
                   </select>
                 </div>
               </div>

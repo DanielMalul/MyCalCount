@@ -18,7 +18,8 @@ export default function MealScannerModal({ isOpen, onClose }) {
   // Clean empty state with zero/empty defaults
   const [manualForm, setManualForm] = useState({
     food_name: '',
-    weight_grams: '',
+    portion_amount: '1',
+    portion_unit: 'יחידות',
     total_calories: '',
     protein_g: '',
     carbs_g: '',
@@ -39,7 +40,8 @@ export default function MealScannerModal({ isOpen, onClose }) {
       if (result.is_food === false || result.food_name === 'לא ניתן לזיהוי') {
         speechText = 'התמונה שצולמה אינה מכילה מאכל או משקה. אנא צלם תמונה ברורה של הארוחה.';
       } else {
-        speechText = `זיהיתי ${result.food_name}. מנה של כ-${result.weight_grams} גרם, ${result.total_calories} קלוריות ו-${result.protein_g} גרם חלבון.`;
+        const portionText = result.portion_display || `כ-${result.weight_grams || 100} גרם`;
+        speechText = `זיהיתי ${result.food_name}. מנה של ${portionText}, ${result.total_calories} קלוריות ו-${result.protein_g} גרם חלבון.`;
       }
       const utterance = new SpeechSynthesisUtterance(speechText);
       utterance.lang = 'he-IL';
@@ -81,15 +83,16 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
   const handleAiCalculateManual = async () => {
     if (!manualForm.food_name.trim()) {
-      setErrorMsg('אנא הכנס שם מאכל (למשל "חזה עוף ואורז").');
+      setErrorMsg('אנא הכנס שם מאכל (למשל "חזה עוף / אורז / סלט").');
       return;
     }
-    const requestedWeight = Number(manualForm.weight_grams) > 0 ? Number(manualForm.weight_grams) : 100;
+    const amount = Number(manualForm.portion_amount) > 0 ? Number(manualForm.portion_amount) : 1;
+    const unit = manualForm.portion_unit || 'יחידות';
     setIsAiCalculatingManual(true);
     setErrorMsg('');
 
     try {
-      const res = await analyzeMealText(manualForm.food_name, requestedWeight);
+      const res = await analyzeMealText(manualForm.food_name, amount, unit);
       setManualForm({
         ...manualForm,
         food_name: res.food_name,
@@ -97,7 +100,6 @@ export default function MealScannerModal({ isOpen, onClose }) {
         protein_g: res.protein_g,
         carbs_g: res.carbs_g,
         fats_g: res.fats_g,
-        weight_grams: requestedWeight,
         explanation: res.explanation
       });
       speakIdentification(res);
@@ -125,20 +127,25 @@ export default function MealScannerModal({ isOpen, onClose }) {
       setErrorMsg('אנא הכנס שם ארוחה.');
       return;
     }
-    const requestedWeight = Number(manualForm.weight_grams) > 0 ? Number(manualForm.weight_grams) : 100;
+    const amount = Number(manualForm.portion_amount) > 0 ? Number(manualForm.portion_amount) : 1;
+    const unit = manualForm.portion_unit || 'יחידות';
+
     setIsAiCalculatingManual(true);
     setErrorMsg('');
 
     try {
-      const res = await analyzeMealText(manualForm.food_name, requestedWeight);
+      const res = await analyzeMealText(manualForm.food_name, amount, unit);
       addMeal({
         food_name: res.food_name || manualForm.food_name,
-        weight_grams: requestedWeight,
+        weight_grams: res.weight_grams || 100,
+        portion_display: res.portion_display || `${amount} ${unit}`,
+        portion_amount: amount,
+        portion_unit: unit,
         total_calories: res.total_calories || 0,
         protein_g: res.protein_g || 0,
         carbs_g: res.carbs_g || 0,
         fats_g: res.fats_g || 0,
-        explanation: res.explanation || `ניתוח AI: ${requestedWeight} גרם`,
+        explanation: res.explanation || `ניתוח AI: ${res.portion_display || `${amount} ${unit}`}`,
         image: null
       });
       speakIdentification(res);
@@ -164,7 +171,8 @@ export default function MealScannerModal({ isOpen, onClose }) {
     setIsAiCalculatingManual(false);
     setManualForm({
       food_name: '',
-      weight_grams: '',
+      portion_amount: '1',
+      portion_unit: 'יחידות',
       total_calories: '',
       protein_g: '',
       carbs_g: '',
@@ -188,7 +196,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-100">הוספת ארוחה לתפריט</h2>
-              <p className="text-xs text-slate-400">סריקה מצולמת או הזנת גרמים בחישוב Gemini AI</p>
+              <p className="text-xs text-slate-400">סריקה מצולמת או הזנת כמות ויחידת מידה בחישוב Gemini AI</p>
             </div>
           </div>
           <button
@@ -229,7 +237,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Scale className="w-3.5 h-3.5" /> הזנת גרמים (חישוב AI)
+            <Scale className="w-3.5 h-3.5" /> הזנת כמות ויחידה (חישוב AI)
           </button>
         </div>
 
@@ -460,24 +468,66 @@ export default function MealScannerModal({ isOpen, onClose }) {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
-                <Scale className="w-4 h-4 text-emerald-400" /> משקל המנה בגרמים / מ"ל
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="5000"
-                placeholder="למשל: 200"
-                value={manualForm.weight_grams}
-                onChange={(e) => setManualForm({ ...manualForm, weight_grams: e.target.value })}
-                className="w-full px-4 py-3.5 rounded-2xl glass-input text-xs font-bold text-emerald-300 focus:border-emerald-400"
-                required
-              />
-              <p className="text-[11px] text-slate-400 mt-1.5">
-                💡 הקלוריות, החלבונים, הפחמימות והשומנים יחושבו אוטומטית ע"י Gemini AI לפי סוג המאכל והמשקל בגרמים.
-              </p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1">
+                  <Scale className="w-4 h-4 text-emerald-400" /> כמות
+                </label>
+                <input
+                  type="number"
+                  step="0.25"
+                  min="0.1"
+                  max="5000"
+                  placeholder="1"
+                  value={manualForm.portion_amount}
+                  onChange={(e) => setManualForm({ ...manualForm, portion_amount: e.target.value })}
+                  className="w-full px-3.5 py-3 rounded-2xl glass-input text-xs font-bold text-emerald-300 focus:border-emerald-400 text-center"
+                  required
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  יחידת מידה (גרמים אינם חובה!)
+                </label>
+                <select
+                  value={manualForm.portion_unit}
+                  onChange={(e) => setManualForm({ ...manualForm, portion_unit: e.target.value })}
+                  className="w-full px-3 py-3 rounded-2xl bg-slate-900 text-xs font-bold text-slate-100 border border-slate-700/80 focus:border-emerald-400"
+                >
+                  <option value="יחידות">🍗/🍎/🥚 יחידות (חזה עוף, תפוח, ביצה...)</option>
+                  <option value="כוסות">🍚/🥣/🥛 כוסות (אורז, שיבולת שועל, חלב...)</option>
+                  <option value="כפות">🥄 כפות (טחינה, חמאת בוטנים, חומוס...)</option>
+                  <option value="פרוסות">🍞/🧀 פרוסות (לחם, גבינה צהובה...)</option>
+                  <option value="מנות">🍽️ מנות (מנת בשר, מנה אישית...)</option>
+                  <option value="גרמים">⚖️ גרמים (100ג, 200ג...)</option>
+                  <option value="מ''ל">🥤 מ"ל (נוזלים, שתייה)</option>
+                </select>
+              </div>
             </div>
+
+            {/* Quick unit selection pills */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <span className="text-[10px] text-slate-400 self-center font-bold">בחירה מהירה:</span>
+              {['יחידות', 'כוסות', 'כפות', 'פרוסות', 'מנות', 'גרמים'].map((unit) => (
+                <button
+                  key={unit}
+                  type="button"
+                  onClick={() => setManualForm({ ...manualForm, portion_unit: unit })}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all ${
+                    manualForm.portion_unit === unit
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/60 shadow'
+                      : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200'
+                  }`}
+                >
+                  {unit}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[11px] text-slate-400 mt-1">
+              💡 גרמים אינם חובה! Gemini AI יחשב אוטומטית קלוריות ואבות מזון עבור הכמות ויחידת המידה שנבחרו.
+            </p>
 
             <button
               type="submit"

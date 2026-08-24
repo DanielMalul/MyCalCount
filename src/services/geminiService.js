@@ -187,11 +187,19 @@ export async function analyzeMealImage(dataUrl) {
 }
 
 /**
- * Text-Based Universal AI Meal Analysis
+ * Text-Based Universal AI Meal Analysis supporting flexible portion units
  */
-export async function analyzeMealText(foodName, weightGrams = 100) {
+export async function analyzeMealText(foodName, portionAmount = 100, portionUnit = 'גרם') {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-  const requestedWeight = Number(weightGrams) > 0 ? Number(weightGrams) : 100;
+
+  // Standardize parameters if amount/unit are passed flexibly
+  let amount = Number(portionAmount) > 0 ? Number(portionAmount) : 1;
+  let unit = portionUnit || 'גרם';
+
+  // If user included unit in foodName or unit wasn't specified separately
+  if (!portionUnit && typeof portionAmount === 'number' && portionAmount > 10) {
+    unit = 'גרם';
+  }
 
   if (!apiKey || apiKey.trim() === '') {
     throw new Error('מפתח Gemini API חסר בקוד. נא להגדיר VITE_GEMINI_API_KEY בקובץ ה-env.');
@@ -214,7 +222,10 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
           responseMimeType: 'application/json'
         }
       });
-      const prompt = `User text entry: "${foodName}" for ${requestedWeight} grams/ml. Parse items and compute exact USDA nutrients for ${requestedWeight} grams/ml. Ensure total weight_grams equals ${requestedWeight}.`;
+      const prompt = `User text entry: "${foodName}", quantity: ${amount}, unit: "${unit}".
+Parse items and compute exact USDA nutritional values for ${amount} ${unit} of "${foodName}".
+Return JSON with total_calories, protein_g, carbs_g, fats_g, estimated weight_grams, and portion_display (e.g. "${amount} ${unit}").`;
+      
       const result = await model.generateContent([prompt]);
       const response = await result.response;
       const textOutput = response.text();
@@ -232,10 +243,16 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
           carbs_g: 0,
           fats_g: 0,
           weight_grams: 0,
+          portion_display: `${amount} ${unit}`,
+          portion_amount: amount,
+          portion_unit: unit,
           explanation: parsedData.explanation || 'הטקסט שהוזן אינו מתאר מאכל או משקה מוכר. נא להזין שם מאכל תקין.',
           isFallback: false
         };
       }
+
+      const weight = Math.max(1, Math.round(Number(parsedData.weight_grams) || (unit === 'גרם' || unit === 'מ"ל' ? amount : 100)));
+      const displayPortion = parsedData.portion_display || `${amount} ${unit}`;
 
       return {
         is_food: true,
@@ -245,9 +262,12 @@ export async function analyzeMealText(foodName, weightGrams = 100) {
         protein_g: Math.max(0, Math.round(Number(parsedData.protein_g) || 0)),
         carbs_g: Math.max(0, Math.round(Number(parsedData.carbs_g) || 0)),
         fats_g: Math.max(0, Math.round(Number(parsedData.fats_g) || 0)),
-        weight_grams: requestedWeight,
+        weight_grams: weight,
+        portion_display: displayPortion,
+        portion_amount: amount,
+        portion_unit: unit,
         ingredients: Array.isArray(parsedData.ingredients) ? parsedData.ingredients : [],
-        explanation: parsedData.explanation || `זיהוי: ${parsedData.food_name || foodName} (${requestedWeight} גרם).`,
+        explanation: parsedData.explanation || `זיהוי: ${parsedData.food_name || foodName} (${displayPortion}).`,
         isFallback: false
       };
     } catch (err) {
