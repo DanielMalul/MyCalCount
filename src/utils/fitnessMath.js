@@ -152,3 +152,63 @@ export function calculateTargets(profile) {
     estimatedTime
   };
 }
+
+/**
+ * US Navy Body Fat Calculator Equation
+ * Men: %BF = 86.010 * log10(waist - neck) - 70.041 * log10(height) + 36.76
+ * Women: %BF = 163.205 * log10(waist + hip - neck) - 97.684 * log10(height) - 78.387
+ */
+export function calculateNavyBodyFat({ gender = 'male', heightCm, weightKg, waistCm, neckCm, hipCm }) {
+  const h = parseFloat(heightCm) || 175;
+  const w = parseFloat(weightKg) || 70;
+  const waist = parseFloat(waistCm) || 85;
+  const neck = parseFloat(neckCm) || 38;
+  const hip = parseFloat(hipCm) || 95;
+
+  let bodyFatPct = 15;
+
+  try {
+    if (gender === 'female') {
+      const val = waist + hip - neck;
+      if (val > 0) {
+        bodyFatPct = 163.205 * Math.log10(val) - 97.684 * Math.log10(h) - 78.387;
+      }
+    } else {
+      const val = waist - neck;
+      if (val > 0) {
+        bodyFatPct = 86.010 * Math.log10(val) - 70.041 * Math.log10(h) + 36.76;
+      }
+    }
+  } catch (err) {
+    bodyFatPct = 15;
+  }
+
+  bodyFatPct = Math.min(50, Math.max(3, Math.round(bodyFatPct * 10) / 10));
+
+  const fatMassKg = Math.round(((w * bodyFatPct) / 100) * 10) / 10;
+  const leanMassKg = Math.round((w - fatMassKg) * 10) / 10;
+
+  let category = 'ממוצע';
+  let categoryColor = 'text-amber-400';
+  if (gender === 'male') {
+    if (bodyFatPct < 10) { category = 'אתלטי / חיטוב תחרותי'; categoryColor = 'text-emerald-400'; }
+    else if (bodyFatPct < 15) { category = 'חטוב מאוד (קוביות בולטות)'; categoryColor = 'text-teal-400'; }
+    else if (bodyFatPct < 20) { category = 'כושר טוב (ממוצע בריא)'; categoryColor = 'text-blue-400'; }
+    else if (bodyFatPct < 25) { category = 'עודף משקל קל'; categoryColor = 'text-amber-400'; }
+    else { category = 'אחוז שומן גבוה'; categoryColor = 'text-rose-400'; }
+  } else {
+    if (bodyFatPct < 16) { category = 'אתלטי / חיטוב תחרותי'; categoryColor = 'text-emerald-400'; }
+    else if (bodyFatPct < 22) { category = 'חטובה מאוד'; categoryColor = 'text-teal-400'; }
+    else if (bodyFatPct < 27) { category = 'כושר טוב (ממוצע בריא)'; categoryColor = 'text-blue-400'; }
+    else if (bodyFatPct < 32) { category = 'עודף משקל קל'; categoryColor = 'text-amber-400'; }
+    else { category = 'אחוז שומן גבוה'; categoryColor = 'text-rose-400'; }
+  }
+
+  return {
+    bodyFatPct,
+    leanMassKg,
+    fatMassKg,
+    category,
+    categoryColor
+  };
+}

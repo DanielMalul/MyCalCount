@@ -18,7 +18,8 @@ import {
   ChefHat,
   Wand2,
   ChevronLeft,
-  Bot
+  Bot,
+  Activity
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import Navbar from '../components/Navbar';
@@ -40,6 +41,7 @@ import FridgeRecipeModal from '../components/FridgeRecipeModal';
 import AchievementBadgesModal from '../components/AchievementBadgesModal';
 import WorkoutTrackerModal from '../components/WorkoutTrackerModal';
 import NotificationCenterModal from '../components/NotificationCenterModal';
+import BodyCompositionModal from '../components/BodyCompositionModal';
 
 export default function Dashboard() {
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -64,6 +66,7 @@ export default function Dashboard() {
   const [isBadgesOpen, setIsBadgesOpen] = useState(false);
   const [isWorkoutOpen, setIsWorkoutOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isBodyCompositionOpen, setIsBodyCompositionOpen] = useState(false);
 
   // Inline calorie target editing state
   const [isEditingTarget, setIsEditingTarget] = useState(false);
@@ -122,6 +125,7 @@ export default function Dashboard() {
         onOpenAuthModal={() => setIsAuthOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         onOpenWorkouts={() => setIsWorkoutOpen(true)}
+        onOpenBodyComposition={() => setIsBodyCompositionOpen(true)}
       />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 sm:pt-6 space-y-4 sm:space-y-6">
@@ -297,6 +301,12 @@ export default function Dashboard() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 justify-center sm:justify-end">
                   <button
+                    onClick={() => setIsBodyCompositionOpen(true)}
+                    className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Activity className="w-4 h-4 text-teal-200" /> אחוז שומן & AI
+                  </button>
+                  <button
                     onClick={() => setIsWorkoutOpen(true)}
                     className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-extrabold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
                   >
@@ -424,6 +434,10 @@ export default function Dashboard() {
       <NotificationCenterModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+      />
+      <BodyCompositionModal
+        isOpen={isBodyCompositionOpen}
+        onClose={() => setIsBodyCompositionOpen(false)}
       />
       <OnboardingModal isOpen={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

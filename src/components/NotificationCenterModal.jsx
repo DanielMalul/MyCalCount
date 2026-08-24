@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Check, X, Sparkles, Droplet, Dumbbell, Flame, Moon, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Bell, Check, X, Sparkles, Droplet, Dumbbell, Flame, Moon, ShieldCheck, AlertCircle, Send } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
+import {
+  requestNotificationPermission,
+  sendNotification,
+  getNotificationPermission,
+  isNotificationSupported
+} from '../services/notificationService';
 
 export default function NotificationCenterModal({ isOpen, onClose }) {
   const userProfile = useFitnessStore((state) => state.userProfile);
@@ -10,9 +16,7 @@ export default function NotificationCenterModal({ isOpen, onClose }) {
   const streakDays = useFitnessStore((state) => state.streakDays || 3);
   const waterMl = useFitnessStore((state) => state.waterMl || 0);
 
-  const [pushEnabled, setPushEnabled] = useState(
-    typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
-  );
+  const [pushEnabled, setPushEnabled] = useState(getNotificationPermission() === 'granted');
   const [pushStatusMsg, setPushStatusMsg] = useState('');
 
   if (!isOpen) return null;
@@ -22,7 +26,7 @@ export default function NotificationCenterModal({ isOpen, onClose }) {
   const remProtein = Math.max(0, (dailyTargets.proteinGrams || 150) - dailyTotals.protein);
 
   const handleTogglePush = async () => {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
+    if (!isNotificationSupported()) {
       setPushStatusMsg('הדפדפן שלך אינו תומך בהתראות פוש.');
       return;
     }
@@ -30,20 +34,36 @@ export default function NotificationCenterModal({ isOpen, onClose }) {
     if (Notification.permission === 'granted') {
       setPushEnabled(true);
       setPushStatusMsg('התראות פוש בדפדפן פעילות כעת!');
+      sendNotification('MyCalCount AI 🔔', {
+        body: 'התראות פוש פעילות בדפדפן שלך! תקבל תזכורות מים, חלבון וקלוריות.',
+        tag: 'test_notif'
+      });
       return;
     }
 
-    const permission = await Notification.requestPermission();
+    const permission = await requestNotificationPermission();
     if (permission === 'granted') {
       setPushEnabled(true);
       setPushStatusMsg('התראות פוש הופעלו בהצלחה! 🎉');
-      new Notification('MyCalCount AI', {
-        body: 'התראות פוש הופעלו! תקבל תזכורות חכמות למים, חלבון וקלוריות.',
-        icon: '/favicon.ico'
-      });
     } else {
       setPushEnabled(false);
-      setPushStatusMsg('הרשאת התראות נדחתה בהגדרות הדפדפן.');
+      setPushStatusMsg('הרשאת התראות נדחתה בהגדרות הדפדפן שלך.');
+    }
+  };
+
+  const handleSendTestNotif = () => {
+    if (Notification.permission !== 'granted') {
+      setPushStatusMsg('יש להפעיל את ההתראות ראשית כדי לקבל התראת בדיקה.');
+      return;
+    }
+    const sent = sendNotification('ניסיון התראת פוש! 🔔', {
+      body: 'התראות הדפדפן שלך עובדות מעולה! תקבל תזכורות תקופתיות למים, חלבון וקלוריות.',
+      tag: 'manual_test'
+    });
+    if (sent) {
+      setPushStatusMsg('התראת בדיקה נשלחה כעת לדפדפן/למערכת שלך! 🚀');
+    } else {
+      setPushStatusMsg('שגיאה בשליחת התראת בדיקה. בדוק הרשאות דפדפן.');
     }
   };
 
@@ -115,20 +135,33 @@ export default function NotificationCenterModal({ isOpen, onClose }) {
         </div>
 
         {/* Browser Push Permission Card */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 flex items-center justify-between gap-3">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="space-y-0.5 min-w-0">
             <span className="text-xs font-extrabold text-white block">התראות דפדפן (Web Push)</span>
-            <p className="text-[11px] text-slate-400">קבל תזכורות מים וחלבון ישירות למחשב ולטלפון</p>
+            <p className="text-[11px] text-slate-400">קבל תזכורות מים, חלבון וקלוריות ישירות למחשב ולטלפון</p>
           </div>
 
-          <button
-            onClick={handleTogglePush}
-            className={`px-3.5 py-2 rounded-xl font-extrabold text-xs shadow-md shrink-0 transition-all ${
-              pushEnabled ? 'bg-emerald-500 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-            }`}
-          >
-            {pushEnabled ? 'מופעל (✓)' : 'הפעל התראות'}
-          </button>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+            {pushEnabled && (
+              <button
+                onClick={handleSendTestNotif}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold text-xs border border-indigo-500/30 transition-all flex items-center gap-1.5"
+                title="שלח התראת בדיקה מידית"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>ניסיון</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleTogglePush}
+              className={`px-3.5 py-2 rounded-xl font-extrabold text-xs shadow-md shrink-0 transition-all ${
+                pushEnabled ? 'bg-emerald-500 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+              }`}
+            >
+              {pushEnabled ? 'מופעל (✓)' : 'הפעל התראות'}
+            </button>
+          </div>
         </div>
 
         {pushStatusMsg && (

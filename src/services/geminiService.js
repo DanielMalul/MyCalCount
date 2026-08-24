@@ -493,6 +493,84 @@ Create 1 creative, fast, healthy recipe. Return valid JSON only in Hebrew accord
   throw lastError || new Error('שגיאה ביצירת מתכון ב-Gemini AI');
 }
 
+/**
+ * AI Body Composition & DEXA Photo Analyzer
+ */
+const BODY_COMPOSITION_PROMPT = `You are a clinical DEXA body composition specialist and expert physique coach.
+Analyze the user's body photo and metrics to estimate body fat %, muscle mass, and projected target physique.
+
+OUTPUT RULES:
+- Output MUST be strictly valid JSON in HEBREW.
+- Provide realistic, supportive, professional fitness evaluation.
+
+JSON Schema:
+{
+  "is_human_body": boolean,
+  "estimated_body_fat_pct": number (e.g. 15.5),
+  "body_fat_category": string (Hebrew e.g. "חטוב מאוד (קוביות בולטות)", "אתלטי", "כושר טוב", "עודף משקל קל"),
+  "visual_assessment": string (2-3 sentences in Hebrew analyzing abdominal definition, muscle tone, and body frame),
+  "target_physique_projection": string (2-3 sentences in Hebrew describing visual transformation when reaching target weight),
+  "estimated_lean_mass_kg": number,
+  "estimated_fat_mass_kg": number,
+  "recommendations": [string] (3 short actionable Hebrew tips for training & diet to reach target)
+}`;
+
+export async function analyzeBodyCompositionImage(dataUrl, userProfile = {}) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('מפתח Gemini API חסר בקוד. נא להגדיר VITE_GEMINI_API_KEY בקובץ ה-env.');
+  }
+
+  const { base64Data, mimeType } = await getBase64FromUrlOrDataUrl(dataUrl);
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+  let lastError = null;
+
+  const currentWeight = Number(userProfile.currentWeightKg) || 70;
+  const targetWeight = Number(userProfile.targetWeightKg) || 65;
+  const height = Number(userProfile.heightCm) || 175;
+  const gender = userProfile.gender || 'male';
+
+  const prompt = `Analyze this body composition photo.
+User metrics: Gender: ${gender}, Current Weight: ${currentWeight}kg, Target Weight: ${targetWeight}kg, Height: ${height}cm.
+Estimate body fat %, body fat category, visual assessment, and projected visual transformation at target weight ${targetWeight}kg.
+Return strictly valid JSON in Hebrew according to schema.`;
+
+  for (const modelName of modelNames) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: BODY_COMPOSITION_PROMPT,
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.2,
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const imagePart = {
+        inlineData: {
+          data: base64Data,
+          mimeType: mimeType
+        }
+      };
+
+      const result = await model.generateContent([prompt, imagePart]);
+      const response = await result.response;
+      const textOutput = response.text();
+
+      return cleanAndParseJSON(textOutput);
+    } catch (err) {
+      console.warn(`Body composition model ${modelName} attempt failed, trying next...`, err);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('שגיאה בניתוח תמונת הרכב הגוף ב-Gemini AI');
+}
+
 
 
 

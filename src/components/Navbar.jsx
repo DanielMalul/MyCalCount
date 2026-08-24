@@ -1,8 +1,8 @@
 import React from 'react';
-import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn, Home, ChefHat, BookOpen, Bell, Dumbbell } from 'lucide-react';
+import { Flame, Calendar, ChevronLeft, ChevronRight, LogOut, LogIn, Home, ChefHat, BookOpen, Bell, Dumbbell, Activity } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
-export default function Navbar({ activeTab = 'dashboard', setActiveTab, onOpenProfileModal, onOpenAuthModal, onOpenNotifications, onOpenWorkouts }) {
+export default function Navbar({ activeTab = 'dashboard', setActiveTab, onOpenProfileModal, onOpenAuthModal, onOpenNotifications, onOpenWorkouts, onOpenBodyComposition }) {
   const selectedDate = useFitnessStore((state) => state.selectedDate);
   const setSelectedDate = useFitnessStore((state) => state.setSelectedDate);
   const user = useFitnessStore((state) => state.user);
@@ -136,6 +136,16 @@ export default function Navbar({ activeTab = 'dashboard', setActiveTab, onOpenPr
 
         {/* User Actions & Quick Modals */}
         <div className="flex items-center space-x-1 sm:space-x-2 space-x-reverse shrink-0">
+          {onOpenBodyComposition && (
+            <button
+              onClick={onOpenBodyComposition}
+              className="p-1.5 sm:p-2 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/20 transition-colors"
+              title="אחוז שומן & AI Visualizer"
+            >
+              <Activity className="w-4 h-4" />
+            </button>
+          )}
+
           {onOpenWorkouts && (
             <button
               onClick={onOpenWorkouts}

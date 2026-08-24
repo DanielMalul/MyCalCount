@@ -77,13 +77,27 @@ const setupRealtimeListeners = (uid, dateStr, set) => {
     unbindMealsSnapshot = onSnapshot(logDocRef, (logSnap) => {
       if (logSnap.exists()) {
         const logData = logSnap.data();
-        if (logData.meals && Array.isArray(logData.meals)) {
-          set({ loggedMeals: logData.meals });
-        } else {
-          set({ loggedMeals: [] });
-        }
+        const cloudMeals = Array.isArray(logData.meals) ? logData.meals : [];
+        set((state) => {
+          const currentLocal = state.loggedMeals || [];
+          const cloudMealIds = new Set(cloudMeals.map((m) => m.id));
+          const unsyncedLocal = currentLocal.filter(
+            (m) => (m.date === dateStr || !m.date) && !cloudMealIds.has(m.id)
+          );
+          const merged = [...cloudMeals, ...unsyncedLocal];
+          return { loggedMeals: merged };
+        });
       } else {
-        set({ loggedMeals: [] });
+        set((state) => {
+          const currentLocal = state.loggedMeals || [];
+          const localForDate = currentLocal.filter((m) => m.date === dateStr);
+          if (localForDate.length > 0 && db && uid) {
+            sanitizeMealsForCloud(localForDate).then((sanitized) => {
+              setDoc(doc(db, 'users', uid, 'dailyLogs', dateStr), { meals: sanitized }, { merge: true }).catch(console.error);
+            });
+          }
+          return { loggedMeals: currentLocal };
+        });
       }
     });
   } catch (err) {
@@ -386,7 +400,8 @@ export const useFitnessStore = create(
         const user = get().user;
         if (isFirebaseConfigured && db && user?.uid) {
           try {
-            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            const mealsForDate = updatedMeals.filter((m) => m.date === dateStr);
+            const cloudMeals = await sanitizeMealsForCloud(mealsForDate);
             await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
             console.error('Firestore meal sync error:', e);
@@ -419,7 +434,8 @@ export const useFitnessStore = create(
         const user = get().user;
         if (isFirebaseConfigured && db && user?.uid) {
           try {
-            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            const mealsForDate = updatedMeals.filter((m) => m.date === dateStr);
+            const cloudMeals = await sanitizeMealsForCloud(mealsForDate);
             await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
             console.error('Firestore batch meal sync error:', e);
@@ -432,10 +448,11 @@ export const useFitnessStore = create(
         set({ loggedMeals: updatedMeals });
 
         const user = get().user;
-        const dateStr = get().selectedDate;
+        const dateStr = get().selectedDate || getTodayString();
         if (isFirebaseConfigured && db && user?.uid) {
           try {
-            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            const mealsForDate = updatedMeals.filter((m) => m.date === dateStr);
+            const cloudMeals = await sanitizeMealsForCloud(mealsForDate);
             await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
             console.error('Firestore update sync error:', e);
@@ -448,10 +465,11 @@ export const useFitnessStore = create(
         set({ loggedMeals: updatedMeals });
 
         const user = get().user;
-        const dateStr = get().selectedDate;
+        const dateStr = get().selectedDate || getTodayString();
         if (isFirebaseConfigured && db && user?.uid) {
           try {
-            const cloudMeals = await sanitizeMealsForCloud(updatedMeals);
+            const mealsForDate = updatedMeals.filter((m) => m.date === dateStr);
+            const cloudMeals = await sanitizeMealsForCloud(mealsForDate);
             await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
             console.error('Firestore delete sync error:', e);
@@ -493,6 +511,33 @@ export const useFitnessStore = create(
       deleteWorkout: (id) => {
         set((state) => ({
           loggedWorkouts: state.loggedWorkouts.filter((w) => w.id !== id)
+        }));
+      },
+
+      // Body Composition Logs (% Body Fat & AI DEXA Visualizer)
+      bodyCompositionLogs: [],
+      addBodyCompositionLog: (log) => {
+        const newLog = {
+          id: 'bodyfat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          date: getTodayString(),
+          timestamp: new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
+          bodyFatPct: Number(log.bodyFatPct) || 15,
+          leanMassKg: Number(log.leanMassKg) || 55,
+          fatMassKg: Number(log.fatMassKg) || 10,
+          category: log.category || 'ממוצע',
+          method: log.method || 'AI Vision',
+          visualAssessment: log.visualAssessment || '',
+          targetProjection: log.targetProjection || '',
+          recommendations: Array.isArray(log.recommendations) ? log.recommendations : []
+        };
+        set((state) => ({
+          bodyCompositionLogs: [newLog, ...(state.bodyCompositionLogs || [])]
+        }));
+      },
+
+      deleteBodyCompositionLog: (id) => {
+        set((state) => ({
+          bodyCompositionLogs: (state.bodyCompositionLogs || []).filter((b) => b.id !== id)
         }));
       },
 
