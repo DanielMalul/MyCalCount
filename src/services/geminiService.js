@@ -59,7 +59,8 @@ RULES:
 - Respond in Hebrew only.
 - Return ONLY valid JSON, no markdown.
 - Verify: protein_g×4 + carbs_g×4 + fats_g×9 ≈ total_calories (±5%). Fix if wrong.
-- For "יחידות" candies/sweets: 1 unit = ~10g unless clearly stated otherwise.
+- MANDATORY: weight_grams MUST equal quantity × unit_weight from the lookup table above. Do NOT deviate.
+- For candies/sweets with "יחידות": 1 unit = 1 SINGLE PIECE (e.g. 1 gummy bear = 10g, NOT 1 bag). Use this strictly.
 
 JSON Schema:
 {
