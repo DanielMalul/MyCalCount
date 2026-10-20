@@ -53,6 +53,7 @@ RULES:
 - Return ONLY valid JSON, no markdown.
 - Use your USDA knowledge to determine the correct weight per unit for any food — do NOT guess or use fixed defaults.
 - When unit is "יחידות": 1 יחידה = 1 single physical piece of that food (e.g. 1 egg, 1 chicken breast, 1 gummy bear, 1 apple). NEVER interpret "יחידה" as a bag, pack, or serving unless the user explicitly writes "שקית" or "חפיסה".
+- If the food_name contains multiple items separated by "+" or "," or "ו" (e.g. "150g chicken + 150g rice + salad"), calculate each item separately then SUM all values into one result. The quantity/unit fields apply only if a single item is given.
 - Verify: protein_g×4 + carbs_g×4 + fats_g×9 ≈ total_calories (±5%). Correct if needed.
 
 JSON Schema:

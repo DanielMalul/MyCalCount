@@ -473,11 +473,11 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
             <div>
               <label className="block text-xs font-bold text-slate-200 mb-1.5">
-                שם המאכל או המשקה
+                🍽️ שם המאכל, המשקה, או ארוחה מלאה עם כמה מרכיבים
               </label>
               <input
                 type="text"
-                placeholder="למשל: נס קפה עם חלב / חזה עוף בגריל / סלט ירקות"
+                placeholder="למשל: 150ג חזה עוף + 150ג אורז + סלט  /  נס קפה עם חלב  /  3 ביצים קשות"
                 value={manualForm.food_name}
                 onChange={(e) => setManualForm({ ...manualForm, food_name: e.target.value })}
                 className="w-full px-4 py-3.5 rounded-2xl glass-input text-xs font-bold focus:border-emerald-400"
@@ -505,7 +505,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
 
               <div className="col-span-2">
                 <label className="block text-xs font-bold text-slate-200 mb-1.5">
-                  יחידת מידה (גרמים אינם חובה!)
+                  יחידה / כמות (לפריט בודד — לארוחה מלאה עם + השאר על 1 מנות)
                 </label>
                 <select
                   value={manualForm.portion_unit}
@@ -543,7 +543,7 @@ export default function MealScannerModal({ isOpen, onClose }) {
             </div>
 
             <p className="text-[11px] text-slate-400 mt-1">
-              💡 גרמים אינם חובה! Gemini AI יחשב אוטומטית קלוריות ואבות מזון עבור הכמות ויחידת המידה שנבחרו.
+              💡 <strong className="text-slate-300">ארוחה עם כמה מרכיבים?</strong> כתוב הכל בשורה אחת עם + למשל: <span className="text-emerald-400">"150ג חזה עוף + 150ג אורז + סלט"</span> ← בחר 1 מנות. Gemini AI יחשב הכל ביחד!
             </p>
 
             <button
