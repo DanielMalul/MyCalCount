@@ -4,6 +4,9 @@ import { Camera, Upload, Sparkles, X, Check, RefreshCw, AlertCircle, Edit3, Plus
 import { analyzeMealImage, analyzeMealText } from '../services/geminiService';
 import { useFitnessStore } from '../store/useFitnessStore';
 
+// Simple in-memory cache to avoid calling Gemini twice for the same input
+const mealTextCache = new Map();
+
 export default function MealScannerModal({ isOpen, onClose }) {
   const addMeal = useFitnessStore((state) => state.addMeal);
 
@@ -88,11 +91,18 @@ export default function MealScannerModal({ isOpen, onClose }) {
     }
     const amount = Number(manualForm.portion_amount) > 0 ? Number(manualForm.portion_amount) : 1;
     const unit = manualForm.portion_unit || 'יחידות';
+    const cacheKey = `${manualForm.food_name.trim().toLowerCase()}|${amount}|${unit}`;
     setIsAiCalculatingManual(true);
     setErrorMsg('');
 
     try {
-      const res = await analyzeMealText(manualForm.food_name, amount, unit);
+      let res;
+      if (mealTextCache.has(cacheKey)) {
+        res = mealTextCache.get(cacheKey);
+      } else {
+        res = await analyzeMealText(manualForm.food_name, amount, unit);
+        mealTextCache.set(cacheKey, res);
+      }
       setManualForm({
         ...manualForm,
         food_name: res.food_name,
@@ -129,12 +139,19 @@ export default function MealScannerModal({ isOpen, onClose }) {
     }
     const amount = Number(manualForm.portion_amount) > 0 ? Number(manualForm.portion_amount) : 1;
     const unit = manualForm.portion_unit || 'יחידות';
+    const cacheKey = `${manualForm.food_name.trim().toLowerCase()}|${amount}|${unit}`;
 
     setIsAiCalculatingManual(true);
     setErrorMsg('');
 
     try {
-      const res = await analyzeMealText(manualForm.food_name, amount, unit);
+      let res;
+      if (mealTextCache.has(cacheKey)) {
+        res = mealTextCache.get(cacheKey);
+      } else {
+        res = await analyzeMealText(manualForm.food_name, amount, unit);
+        mealTextCache.set(cacheKey, res);
+      }
       addMeal({
         food_name: res.food_name || manualForm.food_name,
         weight_grams: res.weight_grams || 100,
@@ -475,8 +492,8 @@ export default function MealScannerModal({ isOpen, onClose }) {
                 </label>
                 <input
                   type="number"
-                  step="0.25"
-                  min="0.1"
+                  step={['יחידות', 'פרוסות', 'מנות'].includes(manualForm.portion_unit) ? '1' : '0.5'}
+                  min={['יחידות', 'פרוסות', 'מנות'].includes(manualForm.portion_unit) ? '1' : '0.5'}
                   max="5000"
                   placeholder="1"
                   value={manualForm.portion_amount}

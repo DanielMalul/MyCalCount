@@ -1,30 +1,49 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const SYSTEM_NUTRITIONIST_PROMPT = `You are an elite clinical dietitian AI. Analyze the image to calculate precise USDA nutritional values.
+// In-memory cache for image analysis results (keyed by first 200 chars of base64)
+const imageAnalysisCache = new Map();
 
-OUTPUT RULES:
-- Output MUST be strictly valid JSON in HEBREW.
-- Keep the "explanation" concise (1-2 sentences in Hebrew).
+const SYSTEM_NUTRITIONIST_PROMPT = `You are a world-class clinical sports dietitian and food scientist with 20+ years of experience and deep knowledge of the USDA FoodData Central database, Israeli/Mediterranean cuisine, and advanced visual portion estimation.
+
+Your task: Analyze the food image with EXTREME precision. Every gram and calorie matters.
+
+ANALYSIS PROTOCOL (follow in order):
+1. IDENTIFY every visible food item, ingredient, sauce, oil, and condiment — including hidden ones (e.g., butter used in cooking, oil in pan, dressings).
+2. ESTIMATE portion size using visual cues: plate diameter reference (~26cm standard), food height/density, serving vessel size, and food-to-plate ratio.
+3. CALCULATE weight per ingredient using standard density tables (e.g., cooked chicken breast ~165g per palm-size piece, cooked rice ~180g per cup, olive oil ~14g per tablespoon).
+4. APPLY cooking adjustments: grilled/roasted proteins lose ~25% water weight; fried foods absorb oil (~10-15% added fat); steamed vegetables retain weight.
+5. CROSS-REFERENCE with USDA FoodData Central for exact macro values per 100g, then scale to estimated weight.
+6. VERIFY: protein_g × 4 + carbs_g × 4 + fats_g × 9 must approximately equal total_calories (±5%). Adjust if not.
+7. If multiple items visible (e.g., rice + chicken + salad), calculate each separately then sum.
+
+CRITICAL ACCURACY RULES:
+- Never round to suspiciously clean numbers (e.g., exactly 500 kcal). Real food has irregular values.
+- Account for cooking oils, sauces, and dressings even if not explicitly visible.
+- If food is in a bowl or container, estimate the fill level.
+- For Israeli/Middle Eastern dishes (hummus, shakshuka, schnitzel, etc.), use Israeli portion norms.
+- Confidence below 70 = image unclear, still give best estimate.
+
+OUTPUT: Strictly valid JSON only. No markdown. All strings in Hebrew.
 
 JSON Schema:
 {
   "is_food": boolean,
-  "food_name": string (Hebrew dish name),
+  "food_name": string (Hebrew dish name, specific e.g. "שניצל עוף מטוגן עם אורז לבן וסלט ירקות"),
   "analysis_confidence": number (0-100),
-  "total_calories": number,
-  "protein_g": number,
-  "carbs_g": number,
-  "fats_g": number,
-  "weight_grams": number,
+  "total_calories": number (integer),
+  "protein_g": number (integer),
+  "carbs_g": number (integer),
+  "fats_g": number (integer),
+  "weight_grams": number (total edible weight, integer),
   "ingredients": [
     {
       "name": string (Hebrew ingredient name),
-      "detection_reasoning": string (Short Hebrew note),
+      "detection_reasoning": string (brief Hebrew note on how you identified it and estimated weight),
       "weight_grams": number,
       "calories": number
     }
   ],
-  "explanation": string (Short 1-2 sentence Hebrew summary)
+  "explanation": string (2-3 sentence Hebrew summary of the meal, portion size assessment, and key nutritional notes)
 }`;
 
 const TEXT_NUTRITIONIST_PROMPT = `You are an elite clinical dietitian AI. Parse the food items and quantities provided in the text and compute exact USDA nutritional values.
@@ -93,7 +112,7 @@ async function getBase64FromUrlOrDataUrl(inputUrl) {
  */
 export function cleanAndParseJSON(text) {
   let cleanText = text.trim();
-  
+
   if (cleanText.startsWith('```')) {
     cleanText = cleanText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
   }
@@ -118,18 +137,25 @@ export async function analyzeMealImage(dataUrl) {
 
   const { base64Data, mimeType } = await getBase64FromUrlOrDataUrl(dataUrl);
 
+  // Cache key = first 300 chars of base64 (unique per image content)
+  const cacheKey = base64Data.substring(0, 300);
+  if (imageAnalysisCache.has(cacheKey)) {
+    console.log('Image analysis: cache hit ✓');
+    return imageAnalysisCache.get(cacheKey);
+  }
+
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-2.0-flash'];
+  // gemini-3.8-flash: primary. gemini-3.6-flash as fallback.
+  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
   let lastError = null;
 
   for (const modelName of modelNames) {
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
-        systemInstruction: SYSTEM_NUTRITIONIST_PROMPT,
         generationConfig: {
           temperature: 0.0,
-          topP: 0.1,
+          topP: 0.05,
           topK: 1,
           responseMimeType: 'application/json'
         }
@@ -142,7 +168,11 @@ export async function analyzeMealImage(dataUrl) {
         }
       };
 
-      const result = await model.generateContent([imagePart]);
+      // Include system prompt in content for better compliance with flash models
+      const result = await model.generateContent([
+        { text: SYSTEM_NUTRITIONIST_PROMPT + '\n\nAnalyze the following food image:' },
+        imagePart
+      ]);
       const response = await result.response;
       const textOutput = response.text();
 
@@ -151,7 +181,7 @@ export async function analyzeMealImage(dataUrl) {
       const isFood = parsedData.is_food !== false && parsedData.food_name !== 'לא ניתן לזיהוי';
 
       if (!isFood) {
-        return {
+        const notFoodResult = {
           is_food: false,
           food_name: 'לא ניתן לזיהוי',
           total_calories: 0,
@@ -162,9 +192,11 @@ export async function analyzeMealImage(dataUrl) {
           explanation: parsedData.explanation || 'התמונה שצולמה אינה מכילה מאכל או משקה מוכר. אנא צלם תמונה ברורה של המנה.',
           isFallback: false
         };
+        imageAnalysisCache.set(cacheKey, notFoodResult);
+        return notFoodResult;
       }
 
-      return {
+      const result_data = {
         is_food: true,
         food_name: parsedData.food_name || 'ארוחה מצולמת',
         analysis_confidence: Number(parsedData.analysis_confidence) || 95,
@@ -177,8 +209,10 @@ export async function analyzeMealImage(dataUrl) {
         explanation: parsedData.explanation || 'זיהוי ניתוח תזונתי מתקדם של Gemini AI.',
         isFallback: false
       };
+      imageAnalysisCache.set(cacheKey, result_data);
+      return result_data;
     } catch (err) {
-      console.warn(`Model ${modelName} precision attempt failed, trying next...`, err);
+      console.warn(`Model ${modelName} vision attempt failed, trying next...`, err);
       lastError = err;
     }
   }
@@ -206,7 +240,7 @@ export async function analyzeMealText(foodName, portionAmount = 100, portionUnit
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-2.0-flash'];
+  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
 
   let lastError = null;
 
@@ -225,7 +259,7 @@ export async function analyzeMealText(foodName, portionAmount = 100, portionUnit
       const prompt = `User text entry: "${foodName}", quantity: ${amount}, unit: "${unit}".
 Parse items and compute exact USDA nutritional values for ${amount} ${unit} of "${foodName}".
 Return JSON with total_calories, protein_g, carbs_g, fats_g, estimated weight_grams, and portion_display (e.g. "${amount} ${unit}").`;
-      
+
       const result = await model.generateContent([prompt]);
       const response = await result.response;
       const textOutput = response.text();
@@ -318,7 +352,7 @@ export async function generateAiMealPlan({ userProfile, dailyTargets, preference
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-2.0-flash'];
+  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
   let lastError = null;
 
   const goalText = userProfile?.goal === 'cut' ? 'חיטוב ושריפת שומן' : userProfile?.goal === 'bulk' ? 'עלייה במסת שריר' : 'שמירה על משקל';
@@ -404,7 +438,7 @@ export async function generateAi3OptionsMealPlan({ userProfile, dailyTargets, pr
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-2.0-flash'];
+  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
   let lastError = null;
 
   const goalText = userProfile?.goal === 'cut' ? 'חיטוב وشריפת שומן' : userProfile?.goal === 'bulk' ? 'עלייה במסת שריר' : 'שמירה על משקל';
@@ -480,7 +514,7 @@ export async function generateFridgeRecipe({ ingredients, remainingCalories = 50
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-2.0-flash'];
+  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
   let lastError = null;
 
   const prompt = `User has these ingredients at home: "${ingredients}".
@@ -545,7 +579,7 @@ export async function analyzeBodyCompositionImage(dataUrl, userProfile = {}) {
   const { base64Data, mimeType } = await getBase64FromUrlOrDataUrl(dataUrl);
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-2.0-flash'];
+  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
   let lastError = null;
 
   const currentWeight = Number(userProfile.currentWeightKg) || 70;
