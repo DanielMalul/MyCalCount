@@ -46,31 +46,33 @@ JSON Schema:
   "explanation": string (2-3 sentence Hebrew summary of the meal, portion size assessment, and key nutritional notes)
 }`;
 
-const TEXT_NUTRITIONIST_PROMPT = `You are an elite clinical dietitian AI. Parse the food items and quantities provided in the text and compute exact USDA nutritional values.
+const TEXT_NUTRITIONIST_PROMPT = `You are a clinical dietitian AI. Given a food name + quantity + unit, return precise USDA nutritional values instantly.
 
-OUTPUT RULES:
-- Output MUST be strictly valid JSON in HEBREW.
-- Keep the "explanation" concise (1-2 sentences in Hebrew).
+UNIT → WEIGHT LOOKUP (use these as defaults when unit is not grams/ml):
+- יחידות (units): egg=55g, banana=120g, apple=150g, orange=130g, chicken breast=165g, schnitzel=130g, bread slice=30g, rice cake=9g, gummy bears (שלגון)=10g each, chocolate square=5g, date=24g, cookie=15g, cracker=10g
+- כוסות (cups): cooked rice=180g, oatmeal=240ml, milk=240ml, cottage=200g, salad=80g
+- כפות (tablespoons): tahini=15g, peanut butter=16g, olive oil=14g, honey=21g, hummus=30g
+- פרוסות (slices): bread=30g, yellow cheese=20g, turkey=15g, toast=25g
+- מנות (servings): use standard Israeli restaurant portion ~200-300g
+
+RULES:
+- Respond in Hebrew only.
+- Return ONLY valid JSON, no markdown.
+- Verify: protein_g×4 + carbs_g×4 + fats_g×9 ≈ total_calories (±5%). Fix if wrong.
+- For "יחידות" candies/sweets: 1 unit = ~10g unless clearly stated otherwise.
 
 JSON Schema:
 {
   "is_food": boolean,
-  "food_name": string (Hebrew meal title),
+  "food_name": string,
   "analysis_confidence": number (0-100),
   "total_calories": number,
   "protein_g": number,
   "carbs_g": number,
   "fats_g": number,
   "weight_grams": number,
-  "ingredients": [
-    {
-      "name": string (Hebrew ingredient name),
-      "detection_reasoning": string (Short Hebrew note),
-      "weight_grams": number,
-      "calories": number
-    }
-  ],
-  "explanation": string (Short 1-2 sentence Hebrew summary)
+  "portion_display": string (e.g. "3 יחידות / 30 גרם"),
+  "explanation": string (1 sentence Hebrew)
 }`;
 
 /**
