@@ -142,8 +142,8 @@ export async function analyzeMealImage(dataUrl) {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  // gemini-3.8-flash: primary. gemini-3.6-flash as fallback.
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  // gemini-3.8-flash: primary.
+  const modelNames = ['gemini-3.8-flash'];
   let lastError = null;
 
   for (const modelName of modelNames) {
@@ -237,7 +237,7 @@ export async function analyzeMealText(foodName, portionAmount = 100, portionUnit
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  const modelNames = ['gemini-3.8-flash'];
 
   let lastError = null;
 
@@ -349,7 +349,7 @@ export async function generateAiMealPlan({ userProfile, dailyTargets, preference
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  const modelNames = ['gemini-3.8-flash'];
   let lastError = null;
 
   const goalText = userProfile?.goal === 'cut' ? 'חיטוב ושריפת שומן' : userProfile?.goal === 'bulk' ? 'עלייה במסת שריר' : 'שמירה על משקל';
@@ -435,7 +435,7 @@ export async function generateAi3OptionsMealPlan({ userProfile, dailyTargets, pr
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  const modelNames = ['gemini-3.8-flash'];
   let lastError = null;
 
   const goalText = userProfile?.goal === 'cut' ? 'חיטוב وشריפת שומן' : userProfile?.goal === 'bulk' ? 'עלייה במסת שריר' : 'שמירה על משקל';
@@ -511,7 +511,7 @@ export async function generateFridgeRecipe({ ingredients, remainingCalories = 50
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  const modelNames = ['gemini-3.8-flash'];
   let lastError = null;
 
   const prompt = `User has these ingredients at home: "${ingredients}".
@@ -576,7 +576,7 @@ export async function analyzeBodyCompositionImage(dataUrl, userProfile = {}) {
   const { base64Data, mimeType } = await getBase64FromUrlOrDataUrl(dataUrl);
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  const modelNames = ['gemini-3.8-flash'];
   let lastError = null;
 
   const currentWeight = Number(userProfile.currentWeightKg) || 70;

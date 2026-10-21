@@ -24,7 +24,7 @@ export async function analyzeWorkoutText({ workoutName, durationMinutes = 45, us
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  const modelNames = ['gemini-3.8-flash'];
   let lastError = null;
 
   const prompt = `Workout: "${workoutName}", Duration: ${durationMinutes} minutes, User Weight: ${userWeightKg} kg.

@@ -18,7 +18,7 @@ export async function askAiNutritionCoach({
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelNames = ['gemini-3.8-flash', 'gemini-3.6-flash'];
+  const modelNames = ['gemini-3.8-flash'];
   let lastError = null;
 
   // Format today's logged meals context
