@@ -18,22 +18,36 @@ export default function MealLogItem({ meal }) {
     carbs_g: meal.carbs_g || 0,
     fats_g: meal.fats_g || 0
   });
+  // Base values for ratio calculations – always relative to original meal data
+  const [baseValues, setBaseValues] = useState({
+    portion_amount: meal.portion_amount || 1,
+    weight_grams: meal.weight_grams || 100,
+    total_calories: meal.total_calories || 0,
+    protein_g: meal.protein_g || 0,
+    carbs_g: meal.carbs_g || 0,
+    fats_g: meal.fats_g || 0
+  });
 
   // Handle Amount Change with proportional Macro Recalculation
+  // Ratio is always calculated against the BASE (original) values when edit modal opened
   const handlePortionAmountChange = (newAmount) => {
-    const parsedAmount = Number(newAmount) || 1;
-    const oldAmount = Number(editForm.portion_amount) || 1;
-    const ratio = parsedAmount / oldAmount;
+    const parsedAmount = Number(newAmount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      setEditForm((prev) => ({ ...prev, portion_amount: newAmount }));
+      return;
+    }
+    const baseAmount = Number(baseValues.portion_amount) || 1;
+    const ratio = parsedAmount / baseAmount;
 
-    setEditForm({
-      ...editForm,
-      portion_amount: parsedAmount,
-      weight_grams: Math.round((editForm.weight_grams || 100) * ratio),
-      total_calories: Math.round((editForm.total_calories || 0) * ratio),
-      protein_g: Math.round((editForm.protein_g || 0) * ratio),
-      carbs_g: Math.round((editForm.carbs_g || 0) * ratio),
-      fats_g: Math.round((editForm.fats_g || 0) * ratio)
-    });
+    setEditForm((prev) => ({
+      ...prev,
+      portion_amount: newAmount,
+      weight_grams: Math.round((baseValues.weight_grams || 100) * ratio),
+      total_calories: Math.round((baseValues.total_calories || 0) * ratio),
+      protein_g: Math.round((baseValues.protein_g || 0) * ratio),
+      carbs_g: Math.round((baseValues.carbs_g || 0) * ratio),
+      fats_g: Math.round((baseValues.fats_g || 0) * ratio)
+    }));
   };
 
   const handleSave = () => {
@@ -113,15 +127,24 @@ export default function MealLogItem({ meal }) {
       <div className="flex items-center space-x-2 space-x-reverse self-end sm:self-center shrink-0">
         <button
           onClick={() => {
-            setEditForm({
+            const base = {
               food_name: meal.food_name,
-              portion_amount: meal.portion_amount || '1',
+              portion_amount: meal.portion_amount || 1,
               portion_unit: meal.portion_unit || (meal.portion_display ? meal.portion_display.split(' ')[1] : 'יחידות'),
               weight_grams: meal.weight_grams || 100,
               total_calories: meal.total_calories || 0,
               protein_g: meal.protein_g || 0,
               carbs_g: meal.carbs_g || 0,
               fats_g: meal.fats_g || 0
+            };
+            setEditForm({ ...base, portion_amount: base.portion_amount });
+            setBaseValues({
+              portion_amount: base.portion_amount,
+              weight_grams: base.weight_grams,
+              total_calories: base.total_calories,
+              protein_g: base.protein_g,
+              carbs_g: base.carbs_g,
+              fats_g: base.fats_g
             });
             setIsEditing(true);
           }}

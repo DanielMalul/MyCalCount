@@ -39,6 +39,8 @@ const defaultProfile = {
 // Module-level real-time Firestore snapshot listener handles
 let unbindMealsSnapshot = null;
 let unbindProfileSnapshot = null;
+// Flag to skip the next snapshot update after a local write (prevents race condition)
+let skipNextMealsSnapshot = false;
 
 const setupRealtimeListeners = (uid, dateStr, set) => {
   if (!isFirebaseConfigured || !db || !uid) return;
@@ -75,16 +77,25 @@ const setupRealtimeListeners = (uid, dateStr, set) => {
   try {
     const logDocRef = doc(db, 'users', uid, 'dailyLogs', dateStr);
     unbindMealsSnapshot = onSnapshot(logDocRef, (logSnap) => {
+      // Skip this snapshot if a local write just happened (race condition guard)
+      if (skipNextMealsSnapshot) {
+        skipNextMealsSnapshot = false;
+        return;
+      }
       if (logSnap.exists()) {
         const logData = logSnap.data();
         const cloudMeals = Array.isArray(logData.meals) ? logData.meals : [];
         set((state) => {
           const currentLocal = state.loggedMeals || [];
           const cloudMealIds = new Set(cloudMeals.map((m) => m.id));
+          // Keep any local meals for this date that haven't reached the cloud yet
           const unsyncedLocal = currentLocal.filter(
             (m) => (m.date === dateStr || !m.date) && !cloudMealIds.has(m.id)
           );
-          const merged = [...cloudMeals, ...unsyncedLocal];
+          // Prefer the LOCAL version of meals that exist in both (cloud may be stale)
+          const localById = new Map(currentLocal.map((m) => [m.id, m]));
+          const mergedCloud = cloudMeals.map((m) => localById.get(m.id) || m);
+          const merged = [...mergedCloud, ...unsyncedLocal];
           return { loggedMeals: merged };
         });
       } else {
@@ -381,6 +392,8 @@ export const useFitnessStore = create(
       // Meal Management
       addMeal: async (meal) => {
         const dateStr = get().selectedDate || getTodayString();
+        const portionAmount = meal.portion_amount || 1;
+        const portionUnit = meal.portion_unit || 'יחידות';
         const newMeal = {
           id: 'meal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
           date: dateStr,
@@ -391,6 +404,9 @@ export const useFitnessStore = create(
           carbs_g: Number(meal.carbs_g) || 0,
           fats_g: Number(meal.fats_g) || 0,
           weight_grams: Number(meal.weight_grams) || 200,
+          portion_amount: portionAmount,
+          portion_unit: portionUnit,
+          portion_display: meal.portion_display || `${portionAmount} ${portionUnit}`,
           explanation: meal.explanation || 'נותח באמצעות Gemini AI',
           image: meal.image || null
         };
@@ -400,10 +416,12 @@ export const useFitnessStore = create(
         const user = get().user;
         if (isFirebaseConfigured && db && user?.uid) {
           try {
+            skipNextMealsSnapshot = true;
             const mealsForDate = updatedMeals.filter((m) => m.date === dateStr);
             const cloudMeals = await sanitizeMealsForCloud(mealsForDate);
             await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
+            skipNextMealsSnapshot = false;
             console.error('Firestore meal sync error:', e);
           }
         }
@@ -451,10 +469,12 @@ export const useFitnessStore = create(
         const dateStr = get().selectedDate || getTodayString();
         if (isFirebaseConfigured && db && user?.uid) {
           try {
+            skipNextMealsSnapshot = true;
             const mealsForDate = updatedMeals.filter((m) => m.date === dateStr);
             const cloudMeals = await sanitizeMealsForCloud(mealsForDate);
             await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
+            skipNextMealsSnapshot = false;
             console.error('Firestore update sync error:', e);
           }
         }
@@ -468,10 +488,12 @@ export const useFitnessStore = create(
         const dateStr = get().selectedDate || getTodayString();
         if (isFirebaseConfigured && db && user?.uid) {
           try {
+            skipNextMealsSnapshot = true;
             const mealsForDate = updatedMeals.filter((m) => m.date === dateStr);
             const cloudMeals = await sanitizeMealsForCloud(mealsForDate);
             await setDoc(doc(db, 'users', user.uid, 'dailyLogs', dateStr), { meals: cloudMeals }, { merge: true });
           } catch (e) {
+            skipNextMealsSnapshot = false;
             console.error('Firestore delete sync error:', e);
           }
         }
