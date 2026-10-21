@@ -151,9 +151,8 @@ export async function analyzeMealImage(dataUrl) {
       const model = genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
-          temperature: 0.0,
-          topP: 0.05,
-          topK: 1,
+          temperature: 0.1,
+          topP: 0.4,
           responseMimeType: 'application/json'
         }
       });
@@ -247,15 +246,16 @@ export async function analyzeMealText(foodName, portionAmount = 100, portionUnit
         model: modelName,
         systemInstruction: TEXT_NUTRITIONIST_PROMPT,
         generationConfig: {
-          temperature: 0.0,
-          topP: 0.1,
-          topK: 1,
+          temperature: 0.1,
+          topP: 0.4,
           responseMimeType: 'application/json'
         }
       });
       const prompt = `User text entry: "${foodName}", quantity: ${amount}, unit: "${unit}".
-Parse items and compute exact USDA nutritional values for ${amount} ${unit} of "${foodName}".
-Return JSON with total_calories, protein_g, carbs_g, fats_g, estimated weight_grams, and portion_display (e.g. "${amount} ${unit}").`;
+IMPORTANT: Calculate the TOTAL nutritional values for EXACTLY ${amount} ${unit} of "${foodName}".
+- Determine nutrition for 1 ${unit} of "${foodName}", then multiply ALL values (calories, protein, carbs, fats, weight_grams) by ${amount}.
+- Return the TOTAL (not per-unit) values.
+Return JSON with total_calories, protein_g, carbs_g, fats_g, weight_grams, and portion_display ("${amount} ${unit}").`;
 
       const result = await model.generateContent([prompt]);
       const response = await result.response;
